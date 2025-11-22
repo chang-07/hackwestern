@@ -548,31 +548,44 @@ function Interview({ question, onInterviewFinish }) {
           
           {/* Visualizer and record button at the bottom of the editor */}
           <div className="visualizer-container">
-            <SimpleVoiceChat audioData={audioData} isPlaying={isPlaying} />
+            <div style={{ 
+              flex: 1, 
+              height: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              marginRight: '20px'
+            }}>
+              <SimpleVoiceChat isPlaying={isPlaying} />
+            </div>
+            
+            {/* Record button */}
             <button 
               onClick={isRecording ? stopRecording : startRecording}
               disabled={isProcessing || isPlaying}
               style={{
-                position: 'absolute',
-                right: '20px',
-                width: '36px',
-                height: '36px',
+                width: '40px',
+                height: '40px',
                 borderRadius: '50%',
-                border: '1px solid rgba(255, 255, 255, 0.2)',
+                border: 'none',
                 backgroundColor: isRecording ? 'rgba(255, 69, 58, 0.15)' : 'rgba(0, 122, 255, 0.15)',
-                color: isRecording ? 'rgba(255, 69, 58, 0.95)' : 'rgba(0, 122, 255, 0.95)',
+                color: isRecording ? '#ff453a' : 'rgba(0, 122, 255, 0.95)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 cursor: (isProcessing || isPlaying) ? 'not-allowed' : 'pointer',
                 opacity: (isProcessing || isPlaying) ? 0.6 : 1,
-                transition: 'all 0.2s ease',
+                transition: 'all 0.3s ease',
+                animation: isRecording ? 'pulse 1.5s infinite' : 'none',
+                outline: 'none',
+                boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
+                flexShrink: 0
               }}
+              title={isRecording ? 'Stop recording' : 'Start recording'}
             >
               {isProcessing ? (
                 <div className="spinner" style={{
-                  width: '18px',
-                  height: '18px',
+                  width: '20px',
+                  height: '20px',
                   border: '2px solid rgba(255, 255, 255, 0.3)',
                   borderRadius: '50%',
                   borderTopColor: 'currentColor',
@@ -580,46 +593,60 @@ function Interview({ question, onInterviewFinish }) {
                 }} />
               ) : isRecording ? (
                 <div style={{
-                  width: '12px',
-                  height: '12px',
-                  borderRadius: '2px',
+                  width: '16px',
+                  height: '16px',
+                  borderRadius: '4px',
                   backgroundColor: 'currentColor'
                 }} />
               ) : (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+                  <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
                 </svg>
               )}
             </button>
           </div>
           
-          {/* Submit button at bottom right */}
+          {/* Submit button in bottom right of code editor */}
           <div style={{
             position: 'absolute',
             bottom: '90px',
             right: '24px',
-            zIndex: 1000
+            zIndex: 10
           }}>
             <button 
               onClick={handleSubmit} 
-              className="submit-button" 
               disabled={isSubmitting}
               style={{
                 width: '48px',
                 height: '48px',
                 borderRadius: '50%',
-                border: '1px solid rgba(255, 255, 255, 0.2)',
-                backgroundColor: 'rgba(0, 122, 255, 0.15)',
-                color: 'rgba(0, 122, 255, 0.95)',
+                border: 'none',
+                backgroundColor: 'rgba(40, 167, 69, 0.2)',
+                color: 'rgba(40, 167, 69, 0.95)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 cursor: isSubmitting ? 'not-allowed' : 'pointer',
                 opacity: isSubmitting ? 0.7 : 1,
-                transition: 'all 0.2s ease',
+                transition: 'all 0.3s ease',
+                outline: 'none',
+                boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
+                fontSize: '20px',
+                fontWeight: 'bold'
               }}
+              title="Submit code"
             >
-              {isSubmitting ? '...' : '✓'}
+              {isSubmitting ? (
+                <div className="spinner" style={{
+                  width: '20px',
+                  height: '20px',
+                  border: '2px solid rgba(255, 255, 255, 0.3)',
+                  borderRadius: '50%',
+                  borderTopColor: 'currentColor',
+                  animation: 'spin 1s linear infinite'
+                }} />
+              ) : '✓'}
             </button>
           </div>
         </div>
