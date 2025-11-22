@@ -1,7 +1,6 @@
 import os
-import random
 from pathlib import Path
-import google.generativeai as genai
+from google import genai
 
 SUBMISSIONS_DIR = Path("submissions")
 CODE_FILE = SUBMISSIONS_DIR / "user_code.txt"
@@ -9,7 +8,7 @@ CODE_FILE = SUBMISSIONS_DIR / "user_code.txt"
 QUESTIONS = {
     "Two Sum": "Given an array of integers nums and an integer target, return the indices of the two numbers such that they add up to target.",
     "Valid Parentheses": "Given a string containing only '(', ')', '{', '}', '[' and ']', determine if the string is valid with correctly matched brackets.",
-    "Maximum Subarray": "Given an integer array nums, return the maximum sum of any contiguous subarray."
+    "Maximum Subarray": "Given an integer array nums, return the maximum sum of any contiguous subarray (Kadane’s algorithm).",
 }
 
 TEST_CASES = {
@@ -36,39 +35,36 @@ TEST_CASES = {
     ],
 }
 
-def save_code_to_file(code):
+
+def save_code_to_file(code: str) -> Path:
+    """Save the user's pasted code to submissions/user_code.txt."""
     SUBMISSIONS_DIR.mkdir(exist_ok=True)
     CODE_FILE.write_text(code, encoding="utf-8")
     return CODE_FILE
 
-def get_random_question():
-    title = random.choice(list(QUESTIONS.keys()))
-    description = QUESTIONS[title]
 
-    print(f"\n=== RANDOMLY SELECTED QUESTION: {title} ===\n")
+def detect_question_and_func(ns: dict) -> tuple[str | None, str | None]:
+    """
+    Look at the executed namespace and infer which problem is being solved
+    based on the function name.
+    """
+    if "twoSum" in ns and callable(ns["twoSum"]):
+        return "Two Sum", "twoSum"
+    if "isValid" in ns and callable(ns["isValid"]):
+        return "Valid Parentheses", "isValid"
+    if "maxSubArray" in ns and callable(ns["maxSubArray"]):
+        return "Maximum Subarray", "maxSubArray"
+    return None, None
 
-    return title, description
 
-def run_tests(code, title):
-    # Ensure we're using a string key to access TEST_CASES
-    test_key = title.get('title', title) if isinstance(title, dict) else title
-    tests = TEST_CASES.get(test_key, [])
-
-    if title == "Two Sum":
-        func_name = "twoSum"
-    elif title == "Valid Parentheses":
-        func_name = "isValid"
-    elif title == "Maximum Subarray":
-        func_name = "maxSubArray"
-    else:
+def run_tests_with_ns(ns: dict, title: str, func_name: str) -> tuple[int, int]:
+    """
+    Run the test cases for the given title using the function from ns.
+    Returns (passed, total).
+    """
+    tests = TEST_CASES.get(title, [])
+    if not tests:
         return 0, 0
-
-    ns = {}
-    try:
-        compiled = compile(code, "<candidate_code>", "exec")
-        exec(compiled, ns)
-    except Exception:
-        return 0, len(tests)
 
     func = ns.get(func_name)
     if not callable(func):
@@ -86,102 +82,105 @@ def run_tests(code, title):
                 result = func(nums, target)
                 if isinstance(result, list) and (result == expected or result == expected[::-1]):
                     passed += 1
+
             elif title == "Valid Parentheses":
                 s = case["s"]
                 expected = case["expected"]
                 result = func(s)
                 if result == expected:
                     passed += 1
+
             elif title == "Maximum Subarray":
                 nums = case["nums"]
                 expected = case["expected"]
                 result = func(nums)
                 if result == expected:
                     passed += 1
+
         except Exception:
             continue
 
     return passed, total
 
-def analyze_code_with_gemini(code, question):
+
+def analyze_code_with_gemini(code: str) -> str:
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
         raise ValueError("Missing GEMINI_API_KEY environment variable.")
 
-    # Configure with the correct API key
-    genai.configure(api_key=api_key)
-    
-    # Use the latest stable model
-    model_name = 'gemini-pro-latest'
-    print(f"Using model: {model_name}")
-    model = genai.GenerativeModel(model_name)
-
-    # Handle different question formats
-    if isinstance(question, (list, tuple)) and len(question) == 2:
-        title, description = question
-    elif isinstance(question, dict):
-        title = question.get('title', 'Coding Question')
-        description = question.get('description', '')
-    else:
-        # If question is just a string, use it as the title
-        title = str(question) if question is not None else 'Coding Question'
-        description = ''
+    client = genai.Client(api_key=api_key)
 
     try:
-        compile(code, "<candidate_code>", "exec")
+        compiled = compile(code, "<candidate_code>", "exec")
         syntax_result = "No syntax errors detected."
         has_syntax_error = False
     except SyntaxError as e:
         syntax_result = f"Syntax error on line {e.lineno}, column {e.offset}: {e.msg}"
         has_syntax_error = True
+        compiled = None
 
-    # Get the test cases using the question title as a string
-    test_cases_key = title
-    if isinstance(title, dict):
-        test_cases_key = title.get('title', '')  # Extract just the title string if it's a dict
-    
-    if has_syntax_error:
-        passed, total = 0, len(TEST_CASES.get(test_cases_key, []))
-    else:
-        passed, total = run_tests(code, test_cases_key)
+    ns: dict = {}
+    title: str | None = None
+    func_name: str | None = None
+    passed = 0
+    total = 0
 
-    if total == 0:
-        result_line = "0/0 test cases passed."
+    if not has_syntax_error and compiled is not None:
+        try:
+            exec(compiled, ns)
+        except Exception as e:
+            syntax_result = f"Runtime error during execution: {type(e).__name__}: {e}"
+            has_syntax_error = True
+        else:
+            title, func_name = detect_question_and_func(ns)
+            if title is not None and func_name is not None:
+                passed, total = run_tests_with_ns(ns, title, func_name)
+            else:
+                passed, total = 0, 0
+
+    test_result_line = f"{passed}/{total} test cases passed" if total > 0 else "0/0 test cases passed"
+
+    if title is not None:
+        description = QUESTIONS[title]
     else:
-        result_line = f"{passed}/{total} test cases passed."
+        description = "Could not determine which problem this solution is for (no known function name like twoSum, isValid, or maxSubArray)."
 
     prompt = f"""
             You are evaluating a Python coding interview answer.
 
-            Interview question:
-            {title}: {description}
+            Detected question:
+            {title if title else "Unknown problem"}: {description}
 
             Syntax check:
             {syntax_result}
 
             Test results:
-            {result_line}
+            {test_result_line}
 
-            Start your answer with exactly this word: {result_line}
+            Start your answer with exactly this line:
+            {test_result_line}
 
-            After that, in three short sections:
+            Then write three short sections:
 
             Syntax:
-            - Briefly restate the syntax result (one line).
+            - Briefly restate the syntax / runtime result.
 
             Complexity:
-            - Give time and space complexity in Big-O for the candidate's approach.
+            - Give time and space complexity in Big-O for the candidate's apparent approach.
 
             Logic:
-            - Explain why some tests failed or why the solution is correct.
-            - Focus on main mistakes or main strengths.
-            - Keep it short and direct. No greetings, no fluff.
+            - Explain why the solution passed or failed tests, and what the candidate is doing logically.
+
+            Keep it short, clear, and direct.
 
             Candidate's code:
             ```python
             {code}
             """
-    
-    response = model.generate_content(prompt)
+
+    response = client.models.generate_content(
+        model="gemini-2.5-flash",
+        contents=prompt,
+    )
 
     return response.text
