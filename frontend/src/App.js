@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react
 import Editor from '@monaco-editor/react';
 import VoiceChat from './components/VoiceChat';
 import SimpleVoiceChat from './components/SimpleVoiceChat';
+import ReactMarkdown from 'react-markdown';
 import './App.css';
 
 const questions = [
@@ -178,6 +179,11 @@ function ProblemDescription({ question }) {
 }
 
 function InterviewReview({ analysis }) {
+  // Remove the markdown code block markers if they exist
+  const cleanAnalysis = analysis ? 
+    analysis.replace(/^```markdown\n|```$/g, '') : 
+    'No analysis available';
+    
   return (
     <div className="interview-review-container">
       <Header />
@@ -185,7 +191,9 @@ function InterviewReview({ analysis }) {
         <h2>Interview Review</h2>
         <div className="analysis-section">
           <h3>Code Analysis</h3>
-          <pre>{analysis}</pre>
+          <div className="markdown-content">
+            <ReactMarkdown>{cleanAnalysis}</ReactMarkdown>
+          </div>
         </div>
       </div>
     </div>
@@ -248,7 +256,7 @@ function Interview({ question, onInterviewFinish }) {
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
-      const response = await fetch('http://127.0.0.1:5000/save-code', {
+      const response = await fetch('http://127.0.0.1:5008/save-code', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -258,7 +266,7 @@ function Interview({ question, onInterviewFinish }) {
 
       if (response.ok) {
         console.log('Code saved successfully, starting analysis...');
-        const analysisResponse = await fetch('http://127.0.0.1:5000/analyze', {
+        const analysisResponse = await fetch('http://127.0.0.1:5008/analyze', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
