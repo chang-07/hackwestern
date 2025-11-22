@@ -151,6 +151,7 @@ body {
   display: flex;
   flex-direction: column;
   position: relative;
+  overflow: hidden;
 }
 
 .code-editor-header {
@@ -281,14 +282,68 @@ body {
   word-wrap: break-word;
 }
 
+.submit-button-container {
+  position: absolute;
+  bottom: 24px;
+  right: 24px;
+  z-index: 1000;
+}
+
 .submit-button {
-  background-color: #34a853;
-  color: #fff;
-  border: none;
-  border-radius: 4px;
-  padding: 5px 10px;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.2);
   cursor: pointer;
-  margin-left: 10px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  background: rgba(52, 168, 83, 0.15);
+  color: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+  font-size: 28px;
+  font-weight: 300;
+  text-align: center;
+}
+
+.submit-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 50%;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.4), rgba(255,255,255,0.05));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.submit-button:hover:not(:disabled) {
+  transform: scale(1.08) translateY(-2px);
+  background: rgba(52, 168, 83, 0.2);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+}
+
+.submit-button:active:not(:disabled) {
+  transform: scale(0.98) translateY(1px);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+}
+
+.submit-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
 }
 
 .interview-review-container {

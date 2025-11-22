@@ -296,9 +296,7 @@ function Interview({ question, onInterviewFinish }) {
       <div className="interview-container">
         <div className="main-content">
           <div className="code-editor-header">
-            <button onClick={handleSubmit} className="submit-button" disabled={isSubmitting}>
-              {isSubmitting ? 'Submitting...' : 'Submit'}
-            </button>
+            {/* Header content if needed */}
           </div>
           <Editor
             height="100%"
@@ -308,9 +306,20 @@ function Interview({ question, onInterviewFinish }) {
             onChange={setCode}
             options={{
               fontSize: fontSize,
-              bracketPairColorization: { enabled: true }
+              bracketPairColorization: { enabled: true },
+              scrollbar: {
+                vertical: 'auto',
+                horizontal: 'auto',
+                verticalScrollbarSize: 10,
+                horizontalScrollbarSize: 10
+              }
             }}
           />
+          <div className="submit-button-container">
+            <button onClick={handleSubmit} className="submit-button" disabled={isSubmitting}>
+              <span className="submit-button-text">{isSubmitting ? '...' : '✓'}</span>
+            </button>
+          </div>
         </div>
         <div className="sidebar">
           <video ref={videoRef} className="camera-view" autoPlay playsInline></video>

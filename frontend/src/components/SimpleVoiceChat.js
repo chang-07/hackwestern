@@ -191,17 +191,102 @@ const SimpleVoiceChat = ({ question }) => {
     }
   };
 
+  // Button styles
+  const buttonStyles = {
+    base: {
+      width: '64px',
+      height: '64px',
+      borderRadius: '50%',
+      border: '1px solid rgba(255, 255, 255, 0.2)',
+      cursor: 'pointer',
+      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 0,
+      position: 'fixed',
+      bottom: '32px',
+      left: '32px',
+      zIndex: 1000,
+      backdropFilter: 'blur(12px) saturate(180%)',
+      WebkitBackdropFilter: 'blur(12px) saturate(180%)',
+      boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.18)',
+      overflow: 'hidden',
+      '::before': {
+        content: '""',
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        borderRadius: '50%',
+        padding: '1px',
+        background: 'linear-gradient(135deg, rgba(255,255,255,0.4), rgba(255,255,255,0.05))',
+        WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+        WebkitMaskComposite: 'xor',
+        maskComposite: 'exclude',
+        pointerEvents: 'none'
+      },
+      ':hover:not(:disabled)': {
+        transform: 'scale(1.08) translateY(-2px)',
+        boxShadow: '0 12px 40px rgba(0,0,0,0.25)'
+      },
+      ':active:not(:disabled)': {
+        transform: 'scale(0.98) translateY(1px)',
+        boxShadow: '0 4px 16px rgba(0,0,0,0.2)'
+      },
+      ':disabled': {
+        opacity: 0.6,
+        cursor: 'not-allowed',
+        transform: 'none',
+        boxShadow: '0 4px 16px rgba(0,0,0,0.15)'
+      }
+    },
+    primary: {
+      background: 'rgba(255, 255, 255, 0.08)',
+      color: 'rgba(255, 255, 255, 0.95)',
+      ':hover:not(:disabled)': {
+        background: 'rgba(255, 255, 255, 0.12)'
+      }
+    },
+    danger: {
+      background: 'rgba(255, 69, 58, 0.15)',
+      color: 'rgba(255, 69, 58, 0.95)',
+      ':hover:not(:disabled)': {
+        background: 'rgba(255, 69, 58, 0.2)'
+      }
+    }
+  };
+
   return (
     <div className="simple-voice-chat">
       <div className="voice-controls">
         <button
           onClick={isRecording ? stopRecording : startRecording}
           disabled={isProcessing}
-          className={`voice-button ${isRecording ? 'recording' : ''} ${isProcessing ? 'processing' : ''}`}
+          style={{
+            ...buttonStyles.base,
+            ...(isRecording ? buttonStyles.danger : buttonStyles.primary),
+            ...(isProcessing && { opacity: 0.7, cursor: 'not-allowed' })
+          }}
         >
-          {isProcessing ? 'Processing...' : isRecording ? '⏹️ Stop' : '🎤 Ask Question'}
+          {isProcessing ? (
+            <span className="spinner"></span>
+          ) : isRecording ? (
+            <>
+              <span className="recording-dot"></span>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="6" y="5" width="4" height="14" rx="1" fill="currentColor"/>
+                <rect x="14" y="5" width="4" height="14" rx="1" fill="currentColor"/>
+              </svg>
+            </>
+          ) : (
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 15C13.6569 15 15 13.6569 15 12V6C15 4.34315 13.6569 3 12 3C10.3431 3 9 4.34315 9 6V12C9 13.6569 10.3431 15 12 15Z" fill="currentColor"/>
+              <path d="M17 12C17 14.7614 14.7614 17 12 17C9.23858 17 7 14.7614 7 12H5C5 15.866 8.13401 19 12 19C15.866 19 19 15.866 19 12H17Z" fill="currentColor"/>
+            </svg>
+          )}
         </button>
-        {isRecording && <div className="recording-indicator">● Recording...</div>}
       </div>
       
       <ReactMic
@@ -227,62 +312,66 @@ const SimpleVoiceChat = ({ question }) => {
 
       <style jsx>{`
         .simple-voice-chat {
-          margin: 1rem 0;
-          padding: 1rem;
-          background: #f8f9fa;
-          border-radius: 8px;
+          position: fixed;
+          bottom: 24px;
+          left: 24px;
+          z-index: 1000;
+          margin: 0;
+          padding: 0;
+          background: transparent;
+          border: none;
+          width: auto;
+          min-width: 0;
         }
         
         .voice-controls {
           display: flex;
+          flex-direction: column;
           align-items: center;
-          gap: 1rem;
-          margin-bottom: 0.5rem;
+          gap: 0;
+          margin: 0;
         }
         
-        .voice-button {
-          padding: 0.5rem 1rem;
-          background: #4CAF50;
-          color: white;
-          border: none;
-          border-radius: 4px;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-        }
-        
-        .voice-button.recording {
-          background: #f44336;
-        }
-        
-        .voice-button.processing {
-          background: #ff9800;
-        }
-        
-        .voice-button:disabled {
-          background: #cccccc;
-          cursor: not-allowed;
-        }
-        
-        .recording-indicator {
-          color: #f44336;
-          font-size: 0.9em;
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-        }
-        
-        .recording-indicator::before {
-          content: '●';
-          color: #f44336;
-          animation: pulse 1.5s infinite;
+        @keyframes spin {
+          to { transform: rotate(360deg); }
         }
         
         @keyframes pulse {
-          0% { opacity: 1; }
-          50% { opacity: 0.3; }
-          100% { opacity: 1; }
+          0% {
+            opacity: 1;
+            box-shadow: 0 0 0 0 rgba(255, 69, 58, 0.7);
+          }
+          70% {
+            opacity: 0.8;
+            box-shadow: 0 0 0 10px rgba(255, 69, 58, 0);
+          }
+          100% {
+            opacity: 1;
+            box-shadow: 0 0 0 0 rgba(255, 69, 58, 0);
+          }
+        }
+        
+        .spinner {
+          display: block;
+          width: 28px;
+          height: 28px;
+          border: 2.5px solid rgba(255, 255, 255, 0.2);
+          border-radius: 50%;
+          border-top-color: rgba(255, 255, 255, 0.9);
+          animation: spin 0.8s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+        }
+        
+        .recording-dot {
+          position: absolute;
+          top: 4px;
+          right: 4px;
+          width: 10px;
+          height: 10px;
+          background-color: #ff453a;
+          border: 2px solid rgba(29, 29, 31, 0.8);
+          border-radius: 50%;
+          animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+          box-shadow: 0 0 0 0 rgba(255, 69, 58, 0.7);
         }
         
         .sound-wave {
