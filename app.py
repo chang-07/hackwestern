@@ -3,7 +3,15 @@ from flask_cors import CORS
 from dotenv import load_dotenv
 from analyzer import analyze_code_with_gemini
 import os
+import re
+import time
+import json
 import requests
+import traceback
+import mimetypes
+from pydub import AudioSegment
+from pydub.silence import split_on_silence
+from pydub.playback import play
 import google.generativeai as genai
 
 # Load environment variables
@@ -277,6 +285,29 @@ def run_gemini(prompt):
     print(error_msg)
     return "I'm sorry, I'm having trouble processing your request right now. Please try again later."
 
+def split_text_into_chunks(text, max_length=300):
+    """Split text into chunks that are small enough for the TTS API"""
+    if len(text) <= max_length:
+        return [text]
+        
+    # Try to split at sentence boundaries
+    sentences = []
+    current_chunk = ""
+    
+    # Split into sentences while preserving punctuation
+    for sentence in re.split(r'(?<=[.!?])\s+', text):
+        if len(current_chunk) + len(sentence) + 1 <= max_length:
+            current_chunk += (" " + sentence).strip()
+        else:
+            if current_chunk:
+                sentences.append(current_chunk)
+            current_chunk = sentence
+    
+    if current_chunk:
+        sentences.append(current_chunk)
+        
+    return sentences
+
 def text_to_speech(text):
     """Convert text to speech using ElevenLabs API"""
     if not text or not text.strip():
@@ -294,6 +325,10 @@ def text_to_speech(text):
         "Content-Type": "application/json",
         "accept": "audio/mpeg"
     }
+    
+    # Split text into chunks if it's too long
+    text_chunks = split_text_into_chunks(text)
+    output_files = []
     
     # Try different models
     model_configs = [
@@ -327,20 +362,51 @@ def text_to_speech(text):
     for config in model_configs:
         try:
             print(f"Trying TTS with model: {config['model_id']}")
-            data = {
-                "text": text,
-                "model_id": config['model_id'],
-                "voice_settings": config['voice_settings']
-            }
             
-            print(f"Sending TTS request to ElevenLabs with text: {text[:100]}...")
-            resp = requests.post(url, json=data, headers=headers, timeout=30)
-            resp.raise_for_status()
-            
-            output_path = "response.mp3"
-            with open(output_path, "wb") as f:
-                f.write(resp.content)
+            # Process each chunk
+            for i, chunk in enumerate(text_chunks):
+                print(f"Processing chunk {i+1}/{len(text_chunks)}: {chunk[:50]}...")
                 
+                data = {
+                    "text": chunk,
+                    "model_id": config['model_id'],
+                    "voice_settings": config['voice_settings']
+                }
+                
+                resp = requests.post(url, json=data, headers=headers, timeout=30)
+                resp.raise_for_status()
+                
+                chunk_file = f"response_chunk_{i}.mp3"
+                with open(chunk_file, "wb") as f:
+                    f.write(resp.content)
+                output_files.append(chunk_file)
+                
+                # Small delay between chunks to avoid rate limiting
+                if i < len(text_chunks) - 1:
+                    time.sleep(0.5)
+            
+            # Combine all chunks into a single file
+            if len(output_files) > 1:
+                combined = AudioSegment.empty()
+                for chunk_file in output_files:
+                    sound = AudioSegment.from_mp3(chunk_file)
+                    combined += sound
+                    # Add a small pause between chunks
+                    combined += AudioSegment.silent(duration=200)  # 200ms pause
+                
+                output_path = "response_combined.mp3"
+                combined.export(output_path, format="mp3")
+                
+                # Clean up chunk files
+                for chunk_file in output_files:
+                    try:
+                        os.remove(chunk_file)
+                    except:
+                        pass
+                
+                output_files = [output_path]
+            
+            output_path = output_files[0]
             file_size = os.path.getsize(output_path)
             print(f"TTS audio saved to {output_path} (size: {file_size} bytes)")
             
@@ -548,6 +614,36 @@ Respond concisely (1-2 sentences max) in an interview-appropriate way. Be helpfu
             "details": str(e),
             "trace": error_trace
         }), 500
+
+@app.route('/text-to-speech', methods=['POST'])
+def handle_text_to_speech():
+    """Endpoint to handle text-to-speech conversion"""
+    try:
+        data = request.get_json()
+        text = data.get('text', '').strip()
+        
+        if not text:
+            return jsonify({'error': 'No text provided'}), 400
+            
+        print(f"Received TTS request for text: {text[:100]}...")
+        
+        # Generate speech using ElevenLabs
+        audio_path = text_to_speech(text)
+        
+        if not audio_path or not os.path.exists(audio_path):
+            return jsonify({'error': 'Failed to generate speech'}), 500
+            
+        # Return the audio file
+        return send_file(
+            audio_path,
+            mimetype='audio/mpeg',
+            as_attachment=False,
+            download_name='speech.mp3'
+        )
+        
+    except Exception as e:
+        print(f"Error in text-to-speech endpoint: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     # Ensure the uploads directory exists

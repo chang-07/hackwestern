@@ -202,6 +202,7 @@ function Interview({ question, onInterviewFinish }) {
   const [selectedLanguage, setSelectedLanguage] = useState('python');
   const [fontSize, setFontSize] = useState(20); // Default font size
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [interviewStarted, setInterviewStarted] = useState(false);
   
   // Audio recording state
   const [isRecording, setIsRecording] = useState(false);
@@ -213,6 +214,11 @@ function Interview({ question, onInterviewFinish }) {
   const audioContextRef = useRef(null);
   const analyserRef = useRef(null);
   const animationFrameId = useRef(null);
+  
+  // Handle interview start when user is ready
+  const handleReady = () => {
+    setInterviewStarted(true);
+  };
 
   useEffect(() => {
     const handleKeyDown = (event) => {
@@ -553,14 +559,153 @@ function Interview({ question, onInterviewFinish }) {
     }
   };
 
+  // Function to get voices with detailed logging
+  const getVoices = () => {
+    const voices = window.speechSynthesis.getVoices();
+    console.log('=== Available Voices ===');
+    voices.forEach((voice, index) => {
+      console.log(`[${index}] ${voice.name} (${voice.lang}) - Default: ${voice.default ? 'Yes' : 'No'}`);
+      console.log('   Voice URI:', voice.voiceURI);
+      console.log('   Local Service:', voice.localService);
+      console.log('   Default:', voice.default);
+    });
+    return voices;
+  };
+
+  // Function to speak using ElevenLabs through our backend
+  const speak = async (text) => {
+    if (!text || !text.trim()) {
+      console.warn('Empty text provided to speak');
+      return;
+    }
+    
+    console.log('Sending text to ElevenLabs TTS:', text);
+    
+    try {
+      const response = await fetch('http://localhost:5008/text-to-speech', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text }),
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(`TTS request failed: ${error}`);
+      }
+      
+      // Get the audio data
+      const audioBlob = await response.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+      
+      // Play the audio
+      return new Promise((resolve) => {
+        const audio = new Audio(audioUrl);
+        audio.onended = () => {
+          console.log('Finished playing TTS audio');
+          URL.revokeObjectURL(audioUrl); // Clean up
+          resolve();
+        };
+        audio.onerror = (error) => {
+          console.error('Error playing TTS audio:', error);
+          URL.revokeObjectURL(audioUrl); // Clean up
+          resolve();
+        };
+        audio.play().catch(error => {
+          console.error('Error starting TTS playback:', error);
+          resolve();
+        });
+      });
+    } catch (error) {
+      console.error('Error in TTS:', error);
+      // Fall back to Web Speech API if ElevenLabs fails
+      console.warn('Falling back to Web Speech API');
+      return new Promise((resolve) => {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.onend = resolve;
+        utterance.onerror = resolve; // Always resolve to prevent hanging
+        window.speechSynthesis.speak(utterance);
+      });
+    }
+  };
+
+  // Handle when user provides their name
+  const handleNameResponse = async (name) => {
+    try {
+      // First, explain the problem in detail in a natural flow
+      const problemExplanation = question.description
+        .replace(/`/g, '')
+        .replace(/\*\*/g, '')
+        .replace(/\*/g, '')
+        .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+        .replace(/\n/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      
+      // Create a more natural flow in a single speech call
+      const introText = [
+        `Great to meet you, ${name}.`,
+        `Let's work on today's problem: ${question.title}.`,
+        problemExplanation,
+        "I'm curious, how would you approach solving this problem?"
+      ].join(' ');
+      
+      await speak(introText);
+      
+    } catch (error) {
+      console.error('Error in name response:', error);
+    }
+  };
+
+  // Play intro audio when component mounts
+  useEffect(() => {
+    const speakIntro = async () => {
+      try {
+        // Single, natural-sounding introduction
+        await speak("Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?");
+      } catch (error) {
+        console.error('Error in introduction:', error);
+      }
+    };
+
+    // Small delay to ensure voices are loaded
+    const timer = setTimeout(() => {
+      speakIntro();
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  const [userName, setUserName] = useState('');
+  const [isAskingName, setIsAskingName] = useState(true);
+
+  // Handle voice transcript
+  const handleTranscript = async (text) => {
+    console.log('User said:', text);
+    
+    if (isAskingName && text.trim()) {
+      // User provided their name
+      const name = text.trim();
+      setUserName(name);
+      setIsAskingName(false);
+      
+      // Handle the name response and continue with problem explanation
+      handleNameResponse(name);
+    }
+  };
+
   return (
     <div className="interview-wrapper" ref={wrapperRef}>
       <Header />
       <div className="interview-container">
         <div className="main-content">
           <div className="editor-container">
-            <div className="code-editor-header">
-              {/* Header content if needed */}
+            <div className="code-editor-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2>Code Editor</h2>
+              <div style={{ marginLeft: '20px' }}>
+                <SimpleVoiceChat onTranscript={handleTranscript} />
+              </div>
             </div>
             <Editor
               height="100%"
