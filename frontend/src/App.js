@@ -38,6 +38,7 @@ const questions = [
 function App() {
   const [currentView, setCurrentView] = useState('login');
   const [selectedQuestion, setSelectedQuestion] = useState(null);
+  const [analysisData, setAnalysisData] = useState(null);
 
   const handleLogin = () => {
     setCurrentView('questionSelector');
@@ -48,11 +49,17 @@ function App() {
     setCurrentView('interview');
   };
 
+  const handleInterviewFinish = (data) => {
+    setAnalysisData(data);
+    setCurrentView('interviewReview');
+  };
+
   return (
     <div className="App">
       {currentView === 'login' && <Login onLogin={handleLogin} />}
       {currentView === 'questionSelector' && <QuestionSelector onQuestionSelect={handleQuestionSelect} />}
-      {currentView === 'interview' && <Interview question={selectedQuestion} />}
+      {currentView === 'interview' && <Interview question={selectedQuestion} onInterviewFinish={handleInterviewFinish} />}
+      {currentView === 'interviewReview' && <InterviewReview analysis={analysisData} />}
     </div>
   );
 }
@@ -165,13 +172,29 @@ function ProblemDescription({ question }) {
   );
 }
 
+function InterviewReview({ analysis }) {
+  return (
+    <div className="interview-review-container">
+      <Header />
+      <div className="interview-review-content">
+        <h2>Interview Review</h2>
+        <div className="analysis-section">
+          <h3>Code Analysis</h3>
+          <pre>{analysis}</pre>
+        </div>
+      </div>
+    </div>
+  );
+}
 
-function Interview({ question }) {
+
+function Interview({ question, onInterviewFinish }) {
   const videoRef = useRef(null);
   const wrapperRef = useRef(null);
   const [code, setCode] = useState('');
   const [selectedLanguage, setSelectedLanguage] = useState('python');
   const [fontSize, setFontSize] = useState(20); // Default font size
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const handleKeyDown = (event) => {
@@ -217,7 +240,8 @@ function Interview({ question }) {
     setSelectedLanguage(language);
   };
 
-  const handleSave = async () => {
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
     try {
       const response = await fetch('http://127.0.0.1:5000/save-code', {
         method: 'POST',
@@ -228,12 +252,36 @@ function Interview({ question }) {
       });
 
       if (response.ok) {
-        console.log('Code saved successfully');
+        console.log('Code saved successfully, starting analysis...');
+        const analysisResponse = await fetch('http://127.0.0.1:5000/analyze', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ 
+            code, 
+            question: {
+              title: question.title,
+              description: question.description || ''
+            }
+          }),
+        });
+        if(analysisResponse.ok) {
+          const analysisResult = await analysisResponse.json();
+          onInterviewFinish(analysisResult.analysis);
+        } else {
+          console.error('Failed to get analysis.');
+          onInterviewFinish('Failed to retrieve analysis.');
+        }
       } else {
         console.error('Failed to save code');
+        onInterviewFinish('Failed to save code before analysis.');
       }
     } catch (error) {
-      console.error('Error saving code:', error);
+      console.error('Error during submit process:', error);
+      onInterviewFinish('An error occurred during the submission process.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -243,7 +291,9 @@ function Interview({ question }) {
       <div className="interview-container">
         <div className="main-content">
           <div className="code-editor-header">
-            <button onClick={handleSave} className="save-button">Save</button>
+            <button onClick={handleSubmit} className="submit-button" disabled={isSubmitting}>
+              {isSubmitting ? 'Submitting...' : 'Submit'}
+            </button>
           </div>
           <Editor
             height="100%"
