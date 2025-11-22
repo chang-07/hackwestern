@@ -9,12 +9,29 @@ const SimpleVoiceChat = ({ question }) => {
 
   const startRecording = () => {
     console.log('Start recording button clicked');
+    // Reset any previous state
+    setLastResponse(null);
     setIsRecording(true);
+    // Auto-stop after 30 seconds to prevent infinite recording
+    setTimeout(() => {
+      if (isRecording) {
+        console.log('Auto-stopping recording after 30 seconds');
+        stopRecording();
+      }
+    }, 30000);
   };
   
   const stopRecording = () => {
     console.log('Stop recording button clicked');
-    setIsRecording(false);
+    if (isRecording) {
+      setIsRecording(false);
+    }
+  };
+  
+  // Handle audio data during recording
+  const onData = (recordedData) => {
+    // You can use this for real-time visualization if needed
+    console.log('Audio data received:', recordedData);
   };
 
   const onStop = async (recordedBlob) => {
@@ -28,19 +45,42 @@ const SimpleVoiceChat = ({ question }) => {
       return;
     }
     
-    if (recordedBlob.blob.size < 1000) { // At least 1KB
-      console.error('Recording is too short:', recordedBlob.blob.size, 'bytes');
-      alert('Recording is too short. Please try again and speak for at least 2 seconds.');
+    // Check minimum duration (2 seconds) and size (5KB)
+    const minDuration = 2000; // 2 seconds
+    const minSize = 5000; // 5KB
+    
+    if (recordedBlob.blob.size < minSize) {
+      console.error('Recording is too short or too quiet:', recordedBlob.blob.size, 'bytes');
+      alert(`Please record for at least 2 seconds and speak clearly.`);
       setIsProcessing(false);
       return;
+    }
+    
+    // Create audio context to check duration
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const audioArrayBuffer = await recordedBlob.blob.arrayBuffer();
+    
+    try {
+      const audioBuffer = await audioContext.decodeAudioData(audioArrayBuffer);
+      const duration = audioBuffer.duration * 1000; // Convert to ms
+      
+      if (duration < minDuration) {
+        console.error('Recording duration too short:', duration, 'ms');
+        alert(`Recording is too short (${Math.round(duration/100)/10}s). Please speak for at least 2 seconds.`);
+        setIsProcessing(false);
+        return;
+      }
+    } catch (e) {
+      console.error('Error analyzing audio:', e);
+      // Continue even if we can't analyze the duration
     }
     
     console.log('Audio blob size:', recordedBlob.blob.size, 'bytes');
     console.log('Audio blob type:', recordedBlob.blob.type);
     
-    // Convert blob to array buffer for inspection
-    const arrayBuffer = await recordedBlob.blob.arrayBuffer();
-    console.log('First 16 bytes of audio data:', new Uint8Array(arrayBuffer).slice(0, 16));
+    // Log first 16 bytes of audio data for debugging
+    const debugArrayBuffer = await recordedBlob.blob.arrayBuffer();
+    console.log('First 16 bytes of audio data:', new Uint8Array(debugArrayBuffer).slice(0, 16));
     
     setIsProcessing(true);
     
@@ -166,29 +206,23 @@ const SimpleVoiceChat = ({ question }) => {
       
       <ReactMic
         record={isRecording}
-        onStop={onStop}
-        mimeType="audio/wav"
         className="sound-wave"
-        strokeColor="#4CAF50"
-        backgroundColor="#f8f9fa"
-        echoCancellation={false}
+        onStop={onStop}
+        onData={onData}
+        strokeColor="#000000"
+        backgroundColor="#FF4081"
+        mimeType="audio/wav"
+        echoCancellation={true}
         autoGainControl={true}
         noiseSuppression={true}
-        audioBitsPerSecond={128000}
         channelCount={1}
+        bufferSize={4096}
         sampleRate={16000}
-        audioConstraints={{
-          channelCount: 1,
-          echoCancellation: false,
-          sampleRate: 16000,
-          sampleSize: 16,
-          // Chrome and Edge
-          mimeType: 'audio/webm;codecs=opus',
-          // Fallback for other browsers
-          ...(navigator.mediaDevices.getSupportedConstraints().channelCount && {
-            channelCount: { exact: 1 },
-          }),
-        }}
+        timeSlice={1000}
+        minDecibels={-45}
+        stopRecordingImmediately={false}
+        audioBitsPerSecond={128000}
+        visualSetting="sinewave"
       />
 
       <style jsx>{`

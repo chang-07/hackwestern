@@ -40,12 +40,33 @@ def get_file_mime_type(file_path):
 
 def speech_to_text(audio_path):
     """Convert speech to text using ElevenLabs API"""
+    print("\n=== Starting Speech-to-Text Conversion ===")
+    print(f"Audio file path: {audio_path}")
+    print(f"File exists: {os.path.exists(audio_path)}")
+    print(f"File size: {os.path.getsize(audio_path)} bytes")
+    
+    if not os.path.exists(audio_path):
+        print("Error: Audio file does not exist")
+        return ""
+        
+    if os.path.getsize(audio_path) < 1000:  # 1KB minimum size
+        print("Error: Audio file is too small")
+        return ""
+    
     url = "https://api.elevenlabs.io/v1/speech-to-text"
-    headers = { "xi-api-key": ELEVENLABS_API_KEY }
+    headers = { 
+        "xi-api-key": ELEVENLABS_API_KEY,
+        "accept": "application/json"
+    }
+    
+    # Verify API key is set
+    if not ELEVENLABS_API_KEY or ELEVENLABS_API_KEY == "your-elevenlabs-api-key":
+        print("Error: ElevenLabs API key not properly configured")
+        return ""
     
     try:
         mime_type = get_file_mime_type(audio_path)
-        print(f"Detected MIME type: {mime_type}")
+        print(f"1. Detected MIME type: {mime_type}")
         
         # Map MIME type to file extension
         ext_map = {
@@ -54,23 +75,45 @@ def speech_to_text(audio_path):
             'audio/ogg': 'ogg'
         }
         
+        file_extension = ext_map.get(mime_type, 'wav')
+        print(f"2. Using file extension: {file_extension}")
+        
         with open(audio_path, "rb") as audio:
+            audio_data = audio.read()
+            print(f"3. Read {len(audio_data)} bytes of audio data")
+            
             files = {
-                'file': (f'audio.{ext_map.get(mime_type, "wav")}', 
-                        audio, 
+                'file': (f'audio.{file_extension}', 
+                        audio_data, 
                         mime_type)
             }
-            # Add required model_id parameter
-            data = {
-                'model_id': 'scribe_v2'  # Using the correct model ID for ElevenLabs API
-            }
-            resp = requests.post(url, headers=headers, files=files, data=data)
             
-        if resp.status_code != 200:
-            print(f"Error in speech_to_text API: {resp.status_code} - {resp.text}")
+            # Try different model IDs if needed
+            model_ids = ['scribe_v2', 'scribe_v1', 'whisper-1']
+            
+            for model_id in model_ids:
+                print(f"4. Trying model: {model_id}")
+                data = {'model_id': model_id}
+                
+                try:
+                    print("5. Sending request to ElevenLabs API...")
+                    resp = requests.post(url, headers=headers, files=files, data=data, timeout=30)
+                    print(f"6. Response status: {resp.status_code}")
+                    
+                    if resp.status_code == 200:
+                        result = resp.json().get("text", "").strip()
+                        print(f"7. Success! Transcribed text: {result}")
+                        return result
+                    else:
+                        print(f"8. Error with model {model_id}: {resp.status_code} - {resp.text}")
+                        
+                except Exception as e:
+                    print(f"9. Exception with model {model_id}: {str(e)}")
+                    continue
+            
+            print("10. All models failed. Last response:", resp.text if 'resp' in locals() else 'No response')
             return ""
             
-        return resp.json().get("text", "")
     except Exception as e:
         print(f"Error in speech_to_text: {str(e)}")
         import traceback
@@ -80,40 +123,152 @@ def speech_to_text(audio_path):
 def run_gemini(text):
     """Process text with Gemini"""
     try:
-        model = genai.GenerativeModel("gemini-pro")
-        response = model.generate_content(f"User said: {text}")
-        return response.text
+        # List available models for debugging
+        try:
+            models = genai.list_models()
+            print("Available models:", [m.name for m in models])
+        except Exception as e:
+            print(f"Warning: Could not list models: {str(e)}")
+        
+        # Try different model names
+        model_names = [
+            'gemini-1.5-pro',
+            'gemini-pro',
+            'gemini-1.0-pro-002',
+            'gemini-1.0-pro'
+        ]
+        
+        last_error = None
+        
+        for model_name in model_names:
+            try:
+                print(f"Trying model: {model_name}")
+                model = genai.GenerativeModel(model_name)
+                
+                # Generate content with the correct parameters
+                response = model.generate_content(
+                    f"You are a helpful AI assistant. The user said: {text}",
+                    generation_config={
+                        "temperature": 0.7,
+                        "max_output_tokens": 200,
+                    },
+                )
+                
+                if hasattr(response, 'text'):
+                    return response.text
+                elif hasattr(response, 'candidates') and response.candidates:
+                    return response.candidates[0].content.parts[0].text
+                else:
+                    print(f"Unexpected response format from model {model_name}")
+                    continue
+                    
+            except Exception as e:
+                last_error = str(e)
+                print(f"Error with model {model_name}: {last_error}")
+                continue
+        
+        # If we get here, all models failed
+        error_msg = f"All models failed. Last error: {last_error}"
+        print(error_msg)
+        return "I'm sorry, I'm having trouble processing your request right now. Please try again later."
+        
+    except Exception as e:
+        error_msg = f"Unexpected error in run_gemini: {str(e)}"
+        print(error_msg)
+        import traceback
+        traceback.print_exc()
+        return "I'm sorry, I encountered an unexpected error."
     except Exception as e:
         print(f"Error in run_gemini: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return "I encountered an error processing your request."
 
 def text_to_speech(text):
     """Convert text to speech using ElevenLabs API"""
+    if not text or not text.strip():
+        print("Error: Empty text provided for TTS")
+        return None
+        
+    # Verify API key is set
+    if not ELEVENLABS_API_KEY or ELEVENLABS_API_KEY == "your-elevenlabs-api-key":
+        print("Error: ElevenLabs API key not properly configured")
+        return None
+        
     url = f"https://api.elevenlabs.io/v1/text-to-speech/{VOICE_ID}"
     headers = {
         "xi-api-key": ELEVENLABS_API_KEY,
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "accept": "audio/mpeg"
     }
-    data = {
-        "text": text,
-        "model_id": "eleven_monolingual_v2",
-        "voice_settings": {
-            "stability": 0.5,
-            "similarity_boost": 0.5
+    
+    # Try different models
+    model_configs = [
+        {
+            "model_id": "eleven_turbo_v2",
+            "voice_settings": {
+                "stability": 0.5,
+                "similarity_boost": 0.5,
+                "style": 0.5,
+                "use_speaker_boost": True
+            }
+        },
+        {
+            "model_id": "eleven_monolingual_v1",
+            "voice_settings": {
+                "stability": 0.5,
+                "similarity_boost": 0.5
+            }
+        },
+        {
+            "model_id": "eleven_multilingual_v1",
+            "voice_settings": {
+                "stability": 0.5,
+                "similarity_boost": 0.5
+            }
         }
-    }
+    ]
 
-    try:
-        resp = requests.post(url, json=data, headers=headers)
-        resp.raise_for_status()
-        
-        output_path = "response.mp3"
-        with open(output_path, "wb") as f:
-            f.write(resp.content)
-        return output_path
-    except Exception as e:
-        print(f"Error in text_to_speech: {str(e)}")
-        return None
+    last_error = None
+    
+    for config in model_configs:
+        try:
+            print(f"Trying TTS with model: {config['model_id']}")
+            data = {
+                "text": text,
+                "model_id": config['model_id'],
+                "voice_settings": config['voice_settings']
+            }
+            
+            print(f"Sending TTS request to ElevenLabs with text: {text[:100]}...")
+            resp = requests.post(url, json=data, headers=headers, timeout=30)
+            resp.raise_for_status()
+            
+            output_path = "response.mp3"
+            with open(output_path, "wb") as f:
+                f.write(resp.content)
+                
+            file_size = os.path.getsize(output_path)
+            print(f"TTS audio saved to {output_path} (size: {file_size} bytes)")
+            
+            # Verify the audio file is valid
+            if file_size < 1000:  # 1KB minimum size for audio
+                print("Warning: Generated audio file is too small, trying next model...")
+                os.remove(output_path)
+                continue
+                
+            return output_path
+            
+        except requests.exceptions.RequestException as e:
+            last_error = str(e)
+            print(f"Error with model {config['model_id']}: {last_error}")
+            if hasattr(e, 'response') and e.response is not None:
+                print(f"Response status: {e.response.status_code}")
+                print(f"Response body: {e.response.text}")
+            continue
+            
+    print(f"All TTS models failed. Last error: {last_error}")
+    return None
 
 @app.route('/')
 def hello_world():
