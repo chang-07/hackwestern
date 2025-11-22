@@ -59,6 +59,12 @@ function App() {
     setCurrentView('interviewReview');
   };
 
+  const handleBack = () => {
+    if (window.confirm('Are you sure you want to leave the interview? Your progress will not be saved.')) {
+      setCurrentView('questionSelector');
+    }
+  };
+
   // Add navigation to voice chat
   const goToVoiceChat = () => {
     navigate('/voice-chat');
@@ -76,7 +82,11 @@ function App() {
         </>
       )}
       {currentView === 'interview' && (
-        <Interview question={selectedQuestion} onInterviewFinish={handleInterviewFinish} />
+        <Interview 
+          question={selectedQuestion} 
+          onInterviewFinish={handleInterviewFinish}
+          onBack={handleBack}
+        />
       )}
       {currentView === 'interviewReview' && <InterviewReview analysis={analysisData} />}
     </div>
@@ -113,10 +123,11 @@ function QuestionSelector({ onQuestionSelect }) {
   );
 }
 
-function Header() {
+function Header({ children }) {
   return (
-    <header className="app-header">
-      <h1>InterviewerMock</h1>
+    <header className="app-header" style={{ position: 'relative' }}>
+      {children}
+      <h1 style={{ margin: 0 }}>InterviewerMock</h1>
     </header>
   );
 }
@@ -284,10 +295,11 @@ function InterviewReview({ analysis }) {
 }
 
 
-function Interview({ question, onInterviewFinish }) {
+function Interview({ question, onInterviewFinish, onBack }) {
   const videoRef = useRef(null);
   const wrapperRef = useRef(null);
   const [code, setCode] = useState('');
+  const navigate = useNavigate();
   const [selectedLanguage, setSelectedLanguage] = useState('python');
   const [fontSize, setFontSize] = useState(20); // Default font size
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -818,13 +830,73 @@ function Interview({ question, onInterviewFinish }) {
 
   return (
     <div className="interview-wrapper" ref={wrapperRef}>
-      <Header />
+      <Header>
+          <button 
+            onClick={onBack}
+            className="back-button"
+            title="Exit Interview"
+            style={{
+              background: 'rgba(255, 255, 255, 0.1)',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              borderRadius: '4px',
+              color: 'white',
+              cursor: 'pointer',
+              padding: '8px 12px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: '36px',
+              width: '36px',
+              transition: 'all 0.2s ease',
+              position: 'absolute',
+              left: '15px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              backdropFilter: 'blur(4px)',
+              zIndex: 10
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)';
+              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+            }}
+          >
+            <svg 
+              width="20" 
+              height="20" 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              xmlns="http://www.w3.org/2000/svg"
+              style={{
+                transition: 'transform 0.2s ease',
+              }}
+              className="back-icon"
+            >
+              <path 
+                d="M18 4H6C4.89543 4 4 4.89543 4 6V18C4 19.1046 4.89543 20 6 20H18C19.1046 20 20 19.1046 20 18V6C20 4.89543 19.1046 4 18 4Z" 
+                stroke="currentColor" 
+                strokeWidth="1.5" 
+                strokeLinecap="round" 
+                strokeLinejoin="round"
+              />
+              <path 
+                d="M10 12H16M10 12L13 9M10 12L13 15" 
+                stroke="currentColor" 
+                strokeWidth="1.5" 
+                strokeLinecap="round" 
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
+      </Header>
       <div className="interview-container">
         <div className="main-content">
           <div className="editor-container">
-            <div className="code-editor-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h2>Code Editor</h2>
-              <div style={{ marginLeft: '20px' }}>
+            <div className="code-editor-header" style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+              <div>
                 <SimpleVoiceChat onTranscript={handleTranscript} />
               </div>
             </div>
