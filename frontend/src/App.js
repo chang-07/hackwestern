@@ -13,14 +13,54 @@ const questions = [
     type: 'Array',
     description: 'Find two numbers that add up to a specific target',
     difficulty: 'Easy',
-    details: 'Given an array of integers `nums` and an integer `target`, return *indices of the two numbers such that they add up to `target`*.',
+    details: 'Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.\n\nYou may assume that each input would have exactly one solution, and you may not use the same element twice.\n\nYou can return the answer in any order.',
     examples: [
       {
         input: 'nums = [2,7,11,15], target = 9',
         output: '[0,1]',
-        explanation: 'Because nums[0] + nums[1] == 9, we return [0, 1].',
+        explanation: 'Because nums[0] + nums[1] == 9, we return [0, 1]'
       },
+      {
+        input: 'nums = [3,2,4], target = 6',
+        output: '[1,2]',
+        explanation: 'Because nums[1] + nums[2] == 6, we return [1, 2]'
+      },
+      {
+        input: 'nums = [3,3], target = 6',
+        output: '[0,1]',
+        explanation: 'The two elements at indices 0 and 1 add up to the target.'
+      }
     ],
+    testCases: [
+      {
+        input: 'nums = [2,7,11,15], target = 9',
+        output: [0, 1],
+        explanation: 'Basic test case with two numbers that sum to target'
+      },
+      {
+        input: 'nums = [3,2,4], target = 6',
+        output: [1, 2],
+        explanation: 'Test case with numbers in the middle of the array'
+      },
+      {
+        input: 'nums = [3,3], target = 6',
+        output: [0, 1],
+        explanation: 'Test case with duplicate numbers'
+      },
+      {
+        input: 'nums = [1,2,3,4,5,6,7,8,9,10], target = 19',
+        output: [8, 9],
+        explanation: 'Test case with larger array'
+      }
+    ],
+    timeComplexity: 'O(n)',
+    spaceComplexity: 'O(n)',
+    hints: [
+      'Use a hash map to store the difference between target and current number',
+      'Check if the current number exists in the hash map',
+      'Return the indices if found, otherwise add the current number and its index to the map'
+    ],
+    solution: 'function twoSum(nums, target) {\n  const map = new Map();\n  for (let i = 0; i < nums.length; i++) {\n    const complement = target - nums[i];\n    if (map.has(complement)) {\n      return [map.get(complement), i];\n    }\n    map.set(nums[i], i);\n  }\n  return [];\n}'
   },
   {
     id: 2,
@@ -28,15 +68,42 @@ const questions = [
     type: 'Linked List',
     description: 'Add two numbers represented as linked lists',
     difficulty: 'Medium',
-    details: 'You are given two non-empty linked lists representing two non-negative integers. The digits are stored in reverse order, and each of their nodes contains a single digit. Add the two numbers and return the sum as a linked list.',
+    details: 'You are given two non-empty linked lists representing two non-negative integers. The digits are stored in reverse order, and each of their nodes contains a single digit. Add the two numbers and return the sum as a linked list.\n\nYou may assume the two numbers do not contain any leading zero, except the number 0 itself.',
     examples: [
       {
         input: 'l1 = [2,4,3], l2 = [5,6,4]',
         output: '[7,0,8]',
-        explanation: '342 + 465 = 807.',
-      },
+        explanation: '342 + 465 = 807.'
+      }
     ],
+    testCases: [
+      {
+        input: 'l1 = [2,4,3], l2 = [5,6,4]',
+        output: [7,0,8],
+        explanation: '342 + 465 = 807'
+      },
+      {
+        input: 'l1 = [0], l2 = [0]',
+        output: [0],
+        explanation: '0 + 0 = 0'
+      },
+      {
+        input: 'l1 = [9,9,9,9,9,9,9], l2 = [9,9,9,9]',
+        output: [8,9,9,9,0,0,0,1],
+        explanation: '9999999 + 9999 = 10009998'
+      }
+    ],
+    timeComplexity: 'O(max(m,n))',
+    spaceComplexity: 'O(max(m,n))',
+    hints: [
+      'Initialize a dummy head for the result linked list',
+      'Use a carry variable to track the carry-over from each digit addition',
+      'Iterate through both lists until you reach the end of both',
+      'Don\'t forget to check if there\'s any remaining carry at the end'
+    ],
+    solution: 'function addTwoNumbers(l1, l2) {\n  let dummy = new ListNode(0);\n  let current = dummy;\n  let carry = 0;\n  \n  while (l1 !== null || l2 !== null) {\n    const x = l1 ? l1.val : 0;\n    const y = l2 ? l2.val : 0;\n    const sum = x + y + carry;\n    \n    carry = Math.floor(sum / 10);\n    current.next = new ListNode(sum % 10);\n    current = current.next;\n    \n    if (l1) l1 = l1.next;\n    if (l2) l2 = l2.next;\n  }\n  \n  if (carry > 0) {\n    current.next = new ListNode(carry);\n  }\n  \n  return dummy.next;\n}'
   },
+  // Other questions with similar structure
   {
     id: 3,
     title: 'Longest Substring Without Repeating Characters',
@@ -48,9 +115,44 @@ const questions = [
       {
         input: 's = "abcabcbb"',
         output: '3',
-        explanation: 'The answer is "abc", with the length of 3.',
+        explanation: 'The answer is "abc", with the length of 3.'
       },
+      {
+        input: 's = "bbbbb"',
+        output: '1',
+        explanation: 'The answer is "b", with the length of 1.'
+      },
+      {
+        input: 's = "pwwkew"',
+        output: '3',
+        explanation: 'The answer is "wke", with the length of 3.'
+      }
     ],
+    testCases: [
+      {
+        input: 's = "abcabcbb"',
+        output: 3,
+        explanation: 'Basic test case with multiple characters'
+      },
+      {
+        input: 's = "bbbbb"',
+        output: 1,
+        explanation: 'All characters are the same'
+      },
+      {
+        input: 's = ""',
+        output: 0,
+        explanation: 'Empty string case'
+      }
+    ],
+    timeComplexity: 'O(n)',
+    spaceComplexity: 'O(min(m, n))',
+    hints: [
+      'Use a sliding window approach with two pointers',
+      'Use a set to track characters in the current window',
+      'When a duplicate is found, move the left pointer'
+    ],
+    solution: 'function lengthOfLongestSubstring(s) {\n  const set = new Set();\n  let left = 0;\n  let maxLength = 0;\n  \n  for (let right = 0; right < s.length; right++) {\n    while (set.has(s[right])) {\n      set.delete(s[left]);\n      left++;\n    }\n    set.add(s[right]);\n    maxLength = Math.max(maxLength, right - left + 1);\n  }\n  return maxLength;\n}'
   },
   {
     id: 4,
@@ -58,14 +160,44 @@ const questions = [
     type: 'Array',
     description: 'Find the median of two sorted arrays',
     difficulty: 'Hard',
-    details: 'Given two sorted arrays nums1 and nums2 of size m and n respectively, return the median of the two sorted arrays.',
+    details: 'Given two sorted arrays nums1 and nums2 of size m and n respectively, return the median of the two sorted arrays.\n\nThe overall run time complexity should be O(log (m+n)).',
     examples: [
       {
         input: 'nums1 = [1,3], nums2 = [2]',
-        output: '2.0',
-        explanation: 'Merged array = [1,2,3] and median is 2.',
+        output: '2.00000',
+        explanation: 'merged array = [1,2,3] and median is 2.'
       },
+      {
+        input: 'nums1 = [1,2], nums2 = [3,4]',
+        output: '2.50000',
+        explanation: 'merged array = [1,2,3,4] and median is (2 + 3) / 2 = 2.5.'
+      }
     ],
+    testCases: [
+      {
+        input: 'nums1 = [1,3], nums2 = [2]',
+        output: 2.0,
+        explanation: 'Median of odd length merged array'
+      },
+      {
+        input: 'nums1 = [1,2], nums2 = [3,4]',
+        output: 2.5,
+        explanation: 'Median of even length merged array'
+      },
+      {
+        input: 'nums1 = [0,0], nums2 = [0,0]',
+        output: 0.0,
+        explanation: 'All elements are the same'
+      }
+    ],
+    timeComplexity: 'O(log(min(m,n)))',
+    spaceComplexity: 'O(1)',
+    hints: [
+      'Use binary search on the smaller array',
+      'Partition both arrays such that the number of elements on left side is equal to right side',
+      'Ensure all elements on left are less than or equal to all elements on right'
+    ],
+    solution: 'function findMedianSortedArrays(nums1, nums2) {\n  if (nums1.length > nums2.length) {\n    [nums1, nums2] = [nums2, nums1];\n  }\n  \n  const m = nums1.length;\n  const n = nums2.length;\n  let low = 0;\n  let high = m;\n  \n  while (low <= high) {\n    const partitionX = Math.floor((low + high) / 2);\n    const partitionY = Math.floor((m + n + 1) / 2) - partitionX;\n    \n    const maxLeftX = (partitionX === 0) ? -Infinity : nums1[partitionX - 1];\n    const minRightX = (partitionX === m) ? Infinity : nums1[partitionX];\n    \n    const maxLeftY = (partitionY === 0) ? -Infinity : nums2[partitionY - 1];\n    const minRightY = (partitionY === n) ? Infinity : nums2[partitionY];\n    \n    if (maxLeftX <= minRightY && maxLeftY <= minRightX) {\n      if ((m + n) % 2 === 0) {\n        return (Math.max(maxLeftX, maxLeftY) + Math.min(minRightX, minRightY)) / 2;\n      } else {\n        return Math.max(maxLeftX, maxLeftY);\n      }\n    } else if (maxLeftX > minRightY) {\n      high = partitionX - 1;\n    } else {\n      low = partitionX + 1;\n    }\n  }\n  \n  throw new Error("Input arrays are not sorted");\n}'
   },
   {
     id: 5,
@@ -73,27 +205,91 @@ const questions = [
     type: 'Stack',
     description: 'Check if a string has valid parentheses',
     difficulty: 'Easy',
-    details: 'Given a string s containing just the characters "(", ")", "{", "}", "[" and "]", determine if the input string is valid.',
+    details: 'Given a string s containing just the characters "(", ")", "{", "}", "[" and "]", determine if the input string is valid.\n\nAn input string is valid if:\n1. Open brackets must be closed by the same type of brackets.\n2. Open brackets must be closed in the correct order.\n3. Every close bracket has a corresponding open bracket of the same type.',
     examples: [
+      {
+        input: 's = "()"',
+        output: 'true',
+      },
       {
         input: 's = "()[]{}"',
         output: 'true',
       },
+      {
+        input: 's = "(]"',
+        output: 'false',
+      }
     ],
+    testCases: [
+      {
+        input: 's = "()"',
+        output: true,
+        explanation: 'Simple valid case'
+      },
+      {
+        input: 's = "([)]"',
+        output: false,
+        explanation: 'Incorrect nesting of brackets'
+      },
+      {
+        input: 's = "{[]}"',
+        output: true,
+        explanation: 'Nested valid brackets'
+      }
+    ],
+    solution: 'function isValid(s) {\n      const stack = [];\n      const map = { ")": "(", "}": "{", "]": "[" };\n      \n      for (const char of s) {\n        if (!(char in map)) {\n          stack.push(char);\n        } else if (stack.pop() !== map[char]) {\n          return false;\n        }\n      }\n      return stack.length === 0;\n    }',
+    hints: [
+      'Use a stack to keep track of opening brackets',
+      'When you encounter a closing bracket, check if it matches the top of the stack',
+      'The string is valid if the stack is empty at the end'
+    ]
   },
   {
     id: 6,
     title: 'Merge k Sorted Lists',
     type: 'Linked List',
-    description: 'Merge k sorted linked lists into one sorted list',
+    description: 'Merge k sorted linked lists',
     difficulty: 'Hard',
-    details: 'You are given an array of k linked-lists lists, each linked-list is sorted in ascending order. Merge all the linked-lists into one sorted linked-list and return it.',
+    details: 'You are given an array of k linked-lists lists, each linked-list is sorted in ascending order.\n\nMerge all the linked-lists into one sorted linked-list and return it.',
     examples: [
       {
         input: 'lists = [[1,4,5],[1,3,4],[2,6]]',
         output: '[1,1,2,3,4,4,5,6]',
       },
+      {
+        input: 'lists = []',
+        output: '[]',
+      },
+      {
+        input: 'lists = [[]]',
+        output: '[]',
+      }
     ],
+    testCases: [
+      {
+        input: 'lists = [[1,4,5],[1,3,4],[2,6]]',
+        output: [1,1,2,3,4,4,5,6],
+        explanation: 'Merge three sorted lists'
+      },
+      {
+        input: 'lists = []',
+        output: [],
+        explanation: 'Empty input case'
+      },
+      {
+        input: 'lists = [[], [1]]',
+        output: [1],
+        explanation: 'One empty list and one single-element list'
+      }
+    ],
+    timeComplexity: 'O(n log k)',
+    spaceComplexity: 'O(k)',
+    hints: [
+      'Use a min-heap to efficiently get the smallest element',
+      'Add the head of each list to the heap',
+      'While the heap is not empty, extract the minimum and add to result'
+    ],
+    solution: 'class MinHeap {\n  constructor() {\n    this.heap = [];\n  }\n  \n  insert(node) {\n    this.heap.push(node);\n    this.bubbleUp();\n  }\n  \n  extractMin() {\n    if (this.heap.length === 1) return this.heap.pop();\n    const min = this.heap[0];\n    this.heap[0] = this.heap.pop();\n    this.sinkDown(0);\n    return min;\n  }\n  \n  bubbleUp() {\n    let index = this.heap.length - 1;\n    while (index > 0) {\n      const parentIndex = Math.floor((index - 1) / 2);\n      if (this.heap[parentIndex].val <= this.heap[index].val) break;\n      [this.heap[parentIndex], this.heap[index]] = [this.heap[index], this.heap[parentIndex]];\n      index = parentIndex;\n    }\n  }\n  \n  sinkDown(index) {\n    const left = 2 * index + 1;\n    const right = 2 * index + 2;\n    let smallest = index;\n    \n    if (left < this.heap.length && this.heap[left].val < this.heap[smallest].val) {\n      smallest = left;\n    }\n    \n    if (right < this.heap.length && this.heap[right].val < this.heap[smallest].val) {\n      smallest = right;\n    }\n    \n    if (smallest !== index) {\n      [this.heap[index], this.heap[smallest]] = [this.heap[smallest], this.heap[index]];\n      this.sinkDown(smallest);\n    }\n  }\n  \n  isEmpty() {\n    return this.heap.length === 0;\n  }\n}\n\nfunction mergeKLists(lists) {\n  const minHeap = new MinHeap();\n  \n  // Add head of each list to min heap\n  for (const list of lists) {\n    if (list) minHeap.insert(list);\n  }\n  \n  const dummy = new ListNode();\n  let current = dummy;\n  \n  while (!minHeap.isEmpty()) {\n    const node = minHeap.extractMin();\n    current.next = node;\n    current = current.next;\n    \n    if (node.next) {\n      minHeap.insert(node.next);\n    }\n  }\n  \n  return dummy.next;\n}'
   },
   {
     id: 7,
@@ -101,13 +297,48 @@ const questions = [
     type: 'Array',
     description: 'Find two lines that together contain the most water',
     difficulty: 'Medium',
-    details: 'Given n non-negative integers a1, a2, ..., an, where each represents a point at coordinate (i, ai). n vertical lines are drawn such that the two endpoints of the line i is at (i, ai) and (i, 0). Find two lines, which, together with the x-axis forms a container, such that the container contains the most water.',
+    details: 'Given n non-negative integers a1, a2, ..., an, where each represents a point at coordinate (i, ai). n vertical lines are drawn such that the two endpoints of the line i is at (i, ai) and (i, 0). Find two lines, which, together with the x-axis forms a container, such that the container contains the most water.\n\nNotice that you may not slant the container.',
     examples: [
       {
         input: 'height = [1,8,6,2,5,4,8,3,7]',
         output: '49',
+        explanation: 'The above vertical lines are represented by array [1,8,6,2,5,4,8,3,7]. In this case, the max area of water (blue section) the container can contain is 49.'
       },
+      {
+        input: 'height = [1,1]',
+        output: '1',
+      },
+      {
+        input: 'height = [4,3,2,1,4]',
+        output: '16',
+      }
     ],
+    testCases: [
+      {
+        input: 'height = [1,8,6,2,5,4,8,3,7]',
+        output: 49,
+        explanation: 'Maximum area between lines at indices 1 and 8'
+      },
+      {
+        input: 'height = [1,1]',
+        output: 1,
+        explanation: 'Minimum possible area with two lines'
+      },
+      {
+        input: 'height = [4,3,2,1,4]',
+        output: 16,
+        explanation: 'Maximum area between first and last elements'
+      }
+    ],
+    timeComplexity: 'O(n)',
+    spaceComplexity: 'O(1)',
+    hints: [
+      'Use two pointers starting from both ends',
+      'Calculate area between the two pointers',
+      'Move the pointer pointing to the shorter line',
+      'Keep track of the maximum area found'
+    ],
+    solution: 'function maxArea(height) {\n  let maxArea = 0;\n  let left = 0;\n  let right = height.length - 1;\n  \n  while (left < right) {\n    const h = Math.min(height[left], height[right]);\n    const w = right - left;\n    maxArea = Math.max(maxArea, h * w);\n    \n    if (height[left] < height[right]) {\n      left++;\n    } else {\n      right--;\n    }\n  }\n  \n  return maxArea;\n}'
   },
   {
     id: 8,
@@ -115,14 +346,47 @@ const questions = [
     type: 'String',
     description: 'Find the longest palindromic substring in a string',
     difficulty: 'Medium',
-    details: 'Given a string s, return the longest palindromic substring in s.',
+    details: 'Given a string s, return the longest palindromic substring in s.\n\nA string is called a palindrome string if the reverse of that string is the same as the original string.',
     examples: [
       {
         input: 's = "babad"',
         output: '"bab"',
-        explanation: '"aba" is also a valid answer.',
+        explanation: '"aba" is also a valid answer.'
       },
+      {
+        input: 's = "cbbd"',
+        output: '"bb"',
+      },
+      {
+        input: 's = "a"',
+        output: '"a"',
+      }
     ],
+    testCases: [
+      {
+        input: 's = "babad"',
+        output: 'bab',
+        explanation: 'Longest palindromic substring is "bab" or "aba"'
+      },
+      {
+        input: 's = "cbbd"',
+        output: 'bb',
+        explanation: 'Longest palindromic substring is "bb"'
+      },
+      {
+        input: 's = "a"',
+        output: 'a',
+        explanation: 'Single character string'
+      }
+    ],
+    timeComplexity: 'O(n²)',
+    spaceComplexity: 'O(1)',
+    hints: [
+      'Consider each character as the center of a palindrome',
+      'Expand around the center for both odd and even length palindromes',
+      'Keep track of the longest palindrome found'
+    ],
+    solution: 'function longestPalindrome(s) {\n  if (!s || s.length < 1) return "";\n  \n  let start = 0;\n  let end = 0;\n  \n  for (let i = 0; i < s.length; i++) {\n    const len1 = expandAroundCenter(s, i, i);\n    const len2 = expandAroundCenter(s, i, i + 1);\n    const len = Math.max(len1, len2);\n    \n    if (len > end - start) {\n      start = i - Math.floor((len - 1) / 2);\n      end = i + Math.floor(len / 2);\n    }\n  }\n  \n  return s.substring(start, end + 1);\n}\n\nfunction expandAroundCenter(s, left, right) {\n  while (left >= 0 && right < s.length && s[left] === s[right]) {\n    left--;\n    right++;\n  }\n  return right - left - 1;\n}'
   },
   {
     id: 9,
@@ -130,13 +394,49 @@ const questions = [
     type: 'Array',
     description: 'Find all unique triplets that sum to zero',
     difficulty: 'Medium',
-    details: 'Given an integer array nums, return all the triplets [nums[i], nums[j], nums[k]] such that i != j, i != k, and j != k, and nums[i] + nums[j] + nums[k] == 0.',
+    details: 'Given an integer array nums, return all the triplets [nums[i], nums[j], nums[k]] such that i != j, i != k, and j != k, and nums[i] + nums[j] + nums[k] == 0.\n\nNotice that the solution set must not contain duplicate triplets.',
     examples: [
       {
         input: 'nums = [-1,0,1,2,-1,-4]',
         output: '[[-1,-1,2],[-1,0,1]]',
       },
+      {
+        input: 'nums = [0,1,1]',
+        output: '[]',
+        explanation: 'The only possible triplet does not sum up to 0.'
+      },
+      {
+        input: 'nums = [0,0,0]',
+        output: '[[0,0,0]]',
+        explanation: 'The only possible triplet sums up to 0.'
+      }
     ],
+    testCases: [
+      {
+        input: 'nums = [-1,0,1,2,-1,-4]',
+        output: [[-1,-1,2],[-1,0,1]],
+        explanation: 'Two unique triplets that sum to zero'
+      },
+      {
+        input: 'nums = [0,0,0,0]',
+        output: [[0,0,0]],
+        explanation: 'Single triplet with all zeros'
+      },
+      {
+        input: 'nums = [1,2,-2,-1]',
+        output: [],
+        explanation: 'No triplets sum to zero'
+      }
+    ],
+    timeComplexity: 'O(n²)',
+    spaceComplexity: 'O(1)',
+    hints: [
+      'Sort the array first',
+      'Use three pointers: one for the current element and two for the remaining elements',
+      'Skip duplicate elements to avoid duplicate triplets',
+      'Use the two-pointer technique to find pairs that sum to the negative of the current element'
+    ],
+    solution: 'function threeSum(nums) {\n  const result = [];\n  nums.sort((a, b) => a - b);\n  \n  for (let i = 0; i < nums.length - 2; i++) {\n    if (i > 0 && nums[i] === nums[i - 1]) continue;\n    \n    let left = i + 1;\n    let right = nums.length - 1;\n    \n    while (left < right) {\n      const sum = nums[i] + nums[left] + nums[right];\n      \n      if (sum === 0) {\n        result.push([nums[i], nums[left], nums[right]]);\n        \n        // Skip duplicates\n        while (left < right && nums[left] === nums[left + 1]) left++;\n        while (left < right && nums[right] === nums[right - 1]) right--;\n        \n        left++;\n        right--;\n      } else if (sum < 0) {\n        left++;\n      } else {\n        right--;\n      }\n    }\n  }\n  \n  return result;\n}'
   },
   {
     id: 10,
@@ -149,8 +449,40 @@ const questions = [
       {
         input: 'intervals = [[1,3],[2,6],[8,10],[15,18]]',
         output: '[[1,6],[8,10],[15,18]]',
+        explanation: 'Since intervals [1,3] and [2,6] overlap, merge them into [1,6].'
       },
+      {
+        input: 'intervals = [[1,4],[4,5]]',
+        output: '[[1,5]]',
+        explanation: 'Intervals [1,4] and [4,5] are considered overlapping.'
+      }
     ],
+    testCases: [
+      {
+        input: '[[1,3],[2,6],[8,10],[15,18]]',
+        output: [[1,6],[8,10],[15,18]],
+        explanation: 'Merge overlapping intervals'
+      },
+      {
+        input: '[[1,4],[4,5]]',
+        output: [[1,5]],
+        explanation: 'Adjacent intervals should be merged'
+      },
+      {
+        input: '[[1,4],[0,4]]',
+        output: [[0,4]],
+        explanation: 'Fully overlapping intervals'
+      }
+    ],
+    timeComplexity: 'O(n log n)',
+    spaceComplexity: 'O(n)',
+    hints: [
+      'Sort the intervals based on the start time',
+      'Initialize the result with the first interval',
+      'Iterate through the sorted intervals and merge if they overlap',
+      'If they don\'t overlap, add the current interval to the result'
+    ],
+    solution: 'function merge(intervals) {\n  if (intervals.length <= 1) return intervals;\n  \n  // Sort intervals by start time\n  intervals.sort((a, b) => a[0] - b[0]);\n  \n  const result = [intervals[0]];\n  \n  for (let i = 1; i < intervals.length; i++) {\n    const current = intervals[i];\n    const last = result[result.length - 1];\n    \n    // If the current interval overlaps with the last merged interval\n    if (current[0] <= last[1]) {\n      // Merge them by updating the end time\n      last[1] = Math.max(last[1], current[1]);\n    } else {\n      // Add the current interval to the result\n      result.push(current);\n    }\n  }\n  \n  return result;\n}'
   },
   {
     id: 11,
@@ -158,13 +490,46 @@ const questions = [
     type: 'Hash Table',
     description: 'Group anagrams together from a list of strings',
     difficulty: 'Medium',
-    details: 'Given an array of strings strs, group the anagrams together. You can return the answer in any order.',
+    details: 'Given an array of strings strs, group the anagrams together. You can return the answer in any order.\n\nAn Anagram is a word or phrase formed by rearranging the letters of a different word or phrase, typically using all the original letters exactly once.',
     examples: [
       {
         input: 'strs = ["eat","tea","tan","ate","nat","bat"]',
         output: '[["bat"],["nat","tan"],["ate","eat","tea"]]',
       },
+      {
+        input: 'strs = [""]',
+        output: '[[""]]',
+      },
+      {
+        input: 'strs = ["a"]',
+        output: '[["a"]]',
+      }
     ],
+    testCases: [
+      {
+        input: '["eat","tea","tan","ate","nat","bat"]',
+        output: [["bat"],["nat","tan"],["ate","eat","tea"]],
+        explanation: 'Group anagrams together'
+      },
+      {
+        input: '[""]',
+        output: [[""]],
+        explanation: 'Single empty string'
+      },
+      {
+        input: '["a"]',
+        output: [["a"]],
+        explanation: 'Single character string'
+      }
+    ],
+    timeComplexity: 'O(n * k log k)',
+    spaceComplexity: 'O(n * k)',
+    hints: [
+      'Use a hash map to group anagrams',
+      'Use the sorted version of each string as the key in the map',
+      'Strings that are anagrams will have the same sorted string'
+    ],
+    solution: 'function groupAnagrams(strs) {\n  const map = new Map();\n  \n  for (const str of strs) {\n    // Sort the string to use as a key\n    const sorted = str.split(\'\').sort().join(\'\');\n    \n    // If the key doesn\'t exist, initialize with empty array\n    if (!map.has(sorted)) {\n      map.set(sorted, []);\n    }\n    \n    // Add the original string to the array\n    map.get(sorted).push(str);\n  }\n  \n  // Convert the map values to an array\n  return Array.from(map.values());\n}'
   },
   {
     id: 12,
@@ -172,14 +537,48 @@ const questions = [
     type: 'Array',
     description: 'Find the contiguous subarray with the largest sum',
     difficulty: 'Easy',
-    details: 'Given an integer array nums, find the contiguous subarray (containing at least one number) which has the largest sum and return its sum.',
+    details: 'Given an integer array nums, find the contiguous subarray (containing at least one number) which has the largest sum and return its sum.\n\nA subarray is a contiguous part of an array.',
     examples: [
       {
         input: 'nums = [-2,1,-3,4,-1,2,1,-5,4]',
         output: '6',
-        explanation: '[4,-1,2,1] has the largest sum = 6.',
+        explanation: '[4,-1,2,1] has the largest sum = 6.'
       },
+      {
+        input: 'nums = [1]',
+        output: '1',
+      },
+      {
+        input: 'nums = [5,4,-1,7,8]',
+        output: '23',
+      }
     ],
+    testCases: [
+      {
+        input: '[-2,1,-3,4,-1,2,1,-5,4]',
+        output: 6,
+        explanation: 'Maximum subarray sum is 6 [4,-1,2,1]'
+      },
+      {
+        input: '[1]',
+        output: 1,
+        explanation: 'Single element array'
+      },
+      {
+        input: '[5,4,-1,7,8]',
+        output: 23,
+        explanation: 'Entire array is the maximum subarray'
+      }
+    ],
+    timeComplexity: 'O(n)',
+    spaceComplexity: 'O(1)',
+    hints: [
+      'Use Kadane\'s algorithm',
+      'Keep track of the maximum sum ending at each position',
+      'If the current element is greater than the sum ending at the previous position plus the current element, start a new subarray',
+      'Update the maximum sum found so far'
+    ],
+    solution: 'function maxSubArray(nums) {\n  if (nums.length === 0) return 0;\n  \n  let maxCurrent = nums[0];\n  let maxGlobal = nums[0];\n  \n  for (let i = 1; i < nums.length; i++) {\n    // Choose between extending the previous subarray or starting a new one\n    maxCurrent = Math.max(nums[i], maxCurrent + nums[i]);\n    \n    // Update the global maximum\n    if (maxCurrent > maxGlobal) {\n      maxGlobal = maxCurrent;\n    }\n  }\n  \n  return maxGlobal;\n}'
   },
   {
     id: 13,
@@ -187,13 +586,47 @@ const questions = [
     type: 'Backtracking',
     description: 'Search for a word in a 2D grid of characters',
     difficulty: 'Medium',
-    details: 'Given an m x n grid of characters board and a string word, return true if word exists in the grid.',
+    details: 'Given an m x n grid of characters board and a string word, return true if word exists in the grid.\n\nThe word can be constructed from letters of sequentially adjacent cells, where adjacent cells are horizontally or vertically neighboring. The same letter cell may not be used more than once.',
     examples: [
       {
         input: 'board = [["A","B","C","E"],["S","F","C","S"],["A","D","E","E"]], word = "ABCCED"',
         output: 'true',
       },
+      {
+        input: 'board = [["A","B","C","E"],["S","F","C","S"],["A","D","E","E"]], word = "SEE"',
+        output: 'true',
+      },
+      {
+        input: 'board = [["A","B","C","E"],["S","F","C","S"],["A","D","E","E"]], word = "ABCB"',
+        output: 'false',
+      }
     ],
+    testCases: [
+      {
+        input: '[["A","B","C","E"],["S","F","C","S"],["A","D","E","E"]], "ABCCED"',
+        output: true,
+        explanation: 'Word can be formed by adjacent cells'
+      },
+      {
+        input: '[["A","B","C","E"],["S","F","C","S"],["A","D","E","E"]], "ABCB"',
+        output: false,
+        explanation: 'Word cannot be formed without reusing cells'
+      },
+      {
+        input: '[["a"]], "a"',
+        output: true,
+        explanation: 'Single character board and word'
+      }
+    ],
+    timeComplexity: 'O(m * n * 4^l)',
+    spaceComplexity: 'O(l)',
+    hints: [
+      'Use backtracking/DFS to explore all possible paths',
+      'Mark visited cells to avoid reuse',
+      'Check all four possible directions (up, down, left, right)',
+      'Return early if the current path cannot form the word'
+    ],
+    solution: 'function exist(board, word) {\n  const m = board.length;\n  const n = board[0].length;\n  \n  function dfs(i, j, index) {\n    // If we\'ve matched all characters\n    if (index === word.length) return true;\n    \n    // Check boundaries and character match\n    if (i < 0 || i >= m || j < 0 || j >= n || board[i][j] !== word[index]) {\n      return false;\n    }\n    \n    // Mark the current cell as visited\n    const temp = board[i][j];\n    board[i][j] = \'#\';\n    \n    // Explore all four directions\n    const found = dfs(i + 1, j, index + 1) ||\\n                 dfs(i - 1, j, index + 1) ||\\n                 dfs(i, j + 1, index + 1) ||\\n                 dfs(i, j - 1, index + 1);\n    \n    // Backtrack: restore the original character\n    board[i][j] = temp;\n    \n    return found;\n  }\n  \n  // Try starting from each cell in the board\n  for (let i = 0; i < m; i++) {\n    for (let j = 0; j < n; j++) {\n      if (board[i][j] === word[0] && dfs(i, j, 0)) {\n        return true;\n      }\n    }\n  }\n  \n  return false;\n}'
   },
   {
     id: 14,
@@ -201,14 +634,45 @@ const questions = [
     type: 'Array',
     description: 'Find the maximum profit from buying and selling a stock',
     difficulty: 'Easy',
-    details: 'You are given an array prices where prices[i] is the price of a given stock on the ith day. You want to maximize your profit by choosing a single day to buy one stock and choosing a different day in the future to sell that stock.',
+    details: 'You are given an array prices where prices[i] is the price of a given stock on the ith day.\n\nYou want to maximize your profit by choosing a single day to buy one stock and choosing a different day in the future to sell that stock.\n\nReturn the maximum profit you can achieve from this transaction. If you cannot achieve any profit, return 0.',
     examples: [
       {
         input: 'prices = [7,1,5,3,6,4]',
         output: '5',
-        explanation: 'Buy on day 2 (price = 1) and sell on day 5 (price = 6), profit = 6-1 = 5.',
+        explanation: 'Buy on day 2 (price = 1) and sell on day 5 (price = 6), profit = 6-1 = 5.'
       },
+      {
+        input: 'prices = [7,6,4,3,1]',
+        output: '0',
+        explanation: 'In this case, no transactions are done and the max profit = 0.'
+      }
     ],
+    testCases: [
+      {
+        input: '[7,1,5,3,6,4]',
+        output: 5,
+        explanation: 'Buy at 1, sell at 6 for max profit of 5'
+      },
+      {
+        input: '[7,6,4,3,1]',
+        output: 0,
+        explanation: 'No transactions, profit is 0'
+      },
+      {
+        input: '[2,4,1]',
+        output: 2,
+        explanation: 'Buy at 2, sell at 4 for profit of 2'
+      }
+    ],
+    timeComplexity: 'O(n)',
+    spaceComplexity: 'O(1)',
+    hints: [
+      'Keep track of the minimum price seen so far',
+      'Calculate potential profit at each step',
+      'Update the maximum profit found so far',
+      'Return 0 if no profit can be made'
+    ],
+    solution: 'function maxProfit(prices) {\n  if (prices.length <= 1) return 0;\n  \n  let minPrice = prices[0];\n  let maxProfit = 0;\n  \n  for (let i = 1; i < prices.length; i++) {\n    // Update the minimum price seen so far\n    if (prices[i] < minPrice) {\n      minPrice = prices[i];\n    }\n    // Calculate potential profit and update maxProfit\n    else if (prices[i] - minPrice > maxProfit) {\n      maxProfit = prices[i] - minPrice;\n    }\n  }\n  \n  return maxProfit;\n}'
   },
   {
     id: 15,
@@ -216,14 +680,36 @@ const questions = [
     type: 'Design',
     description: 'Design a Least Recently Used (LRU) cache',
     difficulty: 'Hard',
-    details: 'Design a data structure that follows the constraints of a Least Recently Used (LRU) cache. Implement the LRUCache class.',
+    details: 'Design a data structure that follows the constraints of a Least Recently Used (LRU) cache.\n\nImplement the LRUCache class:\n- LRUCache(int capacity) Initialize the LRU cache with positive size capacity.\n- int get(int key) Return the value of the key if the key exists, otherwise return -1.\n- void put(int key, int value) Update the value of the key if the key exists. Otherwise, add the key-value pair to the cache. If the number of keys exceeds the capacity from this operation, evict the least recently used key.\n\nThe functions get and put must each run in O(1) average time complexity.',
     examples: [
       {
         input: '["LRUCache", "put", "put", "get", "put", "get", "put", "get", "get", "get"]\n[[2], [1, 1], [2, 2], [1], [3, 3], [2], [4, 4], [1], [3], [4]]',
         output: '[null, null, null, 1, null, -1, null, -1, 3, 4]',
-      },
+        explanation: 'LRUCache lRUCache = new LRUCache(2);\nlRUCache.put(1, 1); // cache is {1=1}\nlRUCache.put(2, 2); // cache is {1=1, 2=2}\nlRUCache.get(1);    // return 1\nlRUCache.put(3, 3); // LRU key was 2, evicts key 2, cache is {1=1, 3=3}\nlRUCache.get(2);    // returns -1 (not found)\nlRUCache.put(4, 4); // LRU key was 1, evicts key 1, cache is {4=4, 3=3}\nlRUCache.get(1);    // return -1 (not found)\nlRUCache.get(3);    // return 3\nlRUCache.get(4);    // return 4'
+      }
     ],
-  },
+    testCases: [
+      {
+        input: '["LRUCache", "put", "put", "get", "put", "get", "put", "get", "get", "get"]\n[[2], [1, 1], [2, 2], [1], [3, 3], [2], [4, 4], [1], [3], [4]]',
+        output: [null, null, null, 1, null, -1, null, -1, 3, 4],
+        explanation: 'Test case with capacity 2 and multiple operations'
+      },
+      {
+        input: '["LRUCache", "put", "get", "put", "get", "get"]\n[[1], [2, 1], [2], [3, 2], [2], [3]]',
+        output: [null, null, 1, null, -1, 2],
+        explanation: 'Test case with capacity 1 and edge cases'
+      }
+    ],
+    timeComplexity: 'O(1) for both get and put operations',
+    spaceComplexity: 'O(capacity)',
+    hints: [
+      'Use a hash map to store key-value pairs for O(1) access',
+      'Use a doubly linked list to maintain the order of usage',
+      'When a key is accessed, move it to the front of the list',
+      'When capacity is reached, remove the least recently used item from the end'
+    ],
+    solution: 'class LRUCache {\n  constructor(capacity) {\n    this.capacity = capacity;\n    this.cache = new Map();\n    this.head = new Node(0, 0);\n    this.tail = new Node(0, 0);\n    this.head.next = this.tail;\n    this.tail.prev = this.head;\n  }\n\n  get(key) {\n    if (this.cache.has(key)) {\n      const node = this.cache.get(key);\n      this.remove(node);\n      this.add(node);\n      return node.value;\n    }\n    return -1;\n  }\n\n  put(key, value) {\n    if (this.cache.has(key)) {\n      this.remove(this.cache.get(key));\n    }\n    const newNode = new Node(key, value);\n    this.add(newNode);\n    this.cache.set(key, newNode);\n    if (this.cache.size > this.capacity) {\n      const lru = this.head.next;\n      this.remove(lru);\n      this.cache.delete(lru.key);\n    }\n  }\n\n  add(node) {\n    const prev = this.tail.prev;\n    prev.next = node;\n    node.prev = prev;\n    node.next = this.tail;\n    this.tail.prev = node;\n  }\n\n  remove(node) {\n    const { prev, next } = node;\n    prev.next = next;\n    next.prev = prev;\n  }\n}\n\nclass Node {\n  constructor(key, value) {\n    this.key = key;\n    this.value = value;\n    this.prev = null;\n    this.next = null;\n  }\n}'
+  }
 ];
 
 function App() {
@@ -808,8 +1294,11 @@ function Interview({ question, onInterviewFinish, onBack }) {
       // Show loading state
       setIsProcessing(true);
       
-      // Send to backend
-      const response = await fetch('http://localhost:5008/process_audio', {
+      // Get the current question title or use a default
+      const questionTitle = question?.title || 'the coding problem';
+      
+      // Send to backend with question title
+      const response = await fetch(`http://localhost:5008/process_audio?question_title=${encodeURIComponent(questionTitle)}`, {
         method: 'POST',
         body: formData,
         // Don't set Content-Type header, let the browser set it with the correct boundary

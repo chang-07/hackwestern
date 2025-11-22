@@ -585,8 +585,11 @@ def process_audio():
                     test_code = f.read()
                 print(f"Current code in test.txt ({len(test_code)} chars):\n{test_code[:200]}{'...' if len(test_code) > 200 else ''}")
                 
+                # Get the current question title from the frontend or use a default
+                question_title = request.args.get('question_title', 'the coding problem')
+                
                 # Add the code context to the user's question with an interviewer-style prompt
-                context = f"""You are a technical interviewer. The candidate has shared this code for the Two Sum problem:
+                context = f"""You are a technical interviewer. The candidate has shared this code for {question_title}:
 ```python
 {test_code}
 ```
@@ -724,10 +727,21 @@ def submit_interview():
 
         # Get a more detailed analysis from Gemini
         try:
-            # Use the correct model name for text generation
-            model = genai.GenerativeModel('gemini-1.0-pro')
-            response = model.generate_content(summary_prompt)
-            detailed_summary = response.text if hasattr(response, 'text') else "Detailed analysis not available."
+            # Use the latest available model for text generation
+            try:
+                model = genai.GenerativeModel('gemini-2.5-flash')
+                response = model.generate_content(summary_prompt)
+                detailed_summary = response.text if hasattr(response, 'text') else "Detailed analysis not available."
+            except Exception as e:
+                print(f"Error with gemini-2.5-flash: {str(e)}")
+                # Fallback to another model if the first one fails
+                try:
+                    model = genai.GenerativeModel('gemini-2.0-flash-latest')
+                    response = model.generate_content(summary_prompt)
+                    detailed_summary = response.text if hasattr(response, 'text') else "Detailed analysis not available."
+                except Exception as e2:
+                    print(f"Error with fallback model: {str(e2)}")
+                    detailed_summary = "Detailed analysis could not be generated due to model errors."
         except Exception as e:
             print(f"Error generating detailed analysis: {str(e)}")
             detailed_summary = "Detailed analysis could not be generated."
