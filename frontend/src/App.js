@@ -579,7 +579,13 @@ function Interview({ question, onInterviewFinish }) {
       return;
     }
     
-    console.log('Sending text to ElevenLabs TTS:', text);
+    // Clean up the text to remove any problematic characters
+    const cleanText = text
+      .replace(/[\r\n]+/g, ' ')  // Replace newlines with spaces
+      .replace(/\s+/g, ' ')        // Replace multiple spaces with single space
+      .trim();
+    
+    console.log('Sending text to ElevenLabs TTS (first 100 chars):', cleanText.substring(0, 100) + (cleanText.length > 100 ? '...' : ''));
     
     try {
       const response = await fetch('http://localhost:5008/text-to-speech', {
@@ -587,7 +593,7 @@ function Interview({ question, onInterviewFinish }) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({ text: cleanText }),
       });
       
       if (!response.ok) {
@@ -599,23 +605,41 @@ function Interview({ question, onInterviewFinish }) {
       const audioBlob = await response.blob();
       const audioUrl = URL.createObjectURL(audioBlob);
       
-      // Play the audio
+      // Create a new audio context for better control
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const audioBuffer = await audioContext.decodeAudioData(await audioBlob.arrayBuffer());
+      
       return new Promise((resolve) => {
-        const audio = new Audio(audioUrl);
-        audio.onended = () => {
+        const source = audioContext.createBufferSource();
+        source.buffer = audioBuffer;
+        source.connect(audioContext.destination);
+        
+        source.onended = () => {
           console.log('Finished playing TTS audio');
+          source.disconnect();
           URL.revokeObjectURL(audioUrl); // Clean up
+          audioContext.close();
           resolve();
         };
-        audio.onerror = (error) => {
+        
+        source.onerror = (error) => {
           console.error('Error playing TTS audio:', error);
-          URL.revokeObjectURL(audioUrl); // Clean up
+          source.disconnect();
+          URL.revokeObjectURL(audioUrl);
+          audioContext.close();
           resolve();
         };
-        audio.play().catch(error => {
+        
+        try {
+          source.start(0);
+          console.log('Started playing TTS audio');
+        } catch (error) {
           console.error('Error starting TTS playback:', error);
+          source.disconnect();
+          URL.revokeObjectURL(audioUrl);
+          audioContext.close();
           resolve();
-        });
+        }
       });
     } catch (error) {
       console.error('Error in TTS:', error);

@@ -373,7 +373,8 @@ def text_to_speech(text):
                     "voice_settings": config['voice_settings']
                 }
                 
-                resp = requests.post(url, json=data, headers=headers, timeout=30)
+                # Increased timeout to 60 seconds
+                resp = requests.post(url, json=data, headers=headers, timeout=60)
                 resp.raise_for_status()
                 
                 chunk_file = f"response_chunk_{i}.mp3"
@@ -618,6 +619,7 @@ Respond concisely (1-2 sentences max) in an interview-appropriate way. Be helpfu
 @app.route('/text-to-speech', methods=['POST'])
 def handle_text_to_speech():
     """Endpoint to handle text-to-speech conversion"""
+    audio_path = None
     try:
         data = request.get_json()
         text = data.get('text', '').strip()
@@ -634,15 +636,26 @@ def handle_text_to_speech():
             return jsonify({'error': 'Failed to generate speech'}), 500
             
         # Return the audio file
-        return send_file(
+        response = send_file(
             audio_path,
             mimetype='audio/mpeg',
             as_attachment=False,
-            download_name='speech.mp3'
+            download_name='speech.mp3',
+            conditional=True
         )
+        
+        # Clean up the audio file after sending
+        response.call_on_close(lambda: os.remove(audio_path) if audio_path and os.path.exists(audio_path) else None)
+        return response
         
     except Exception as e:
         print(f"Error in text-to-speech endpoint: {str(e)}")
+        # Clean up in case of error
+        if audio_path and os.path.exists(audio_path):
+            try:
+                os.remove(audio_path)
+            except:
+                pass
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
