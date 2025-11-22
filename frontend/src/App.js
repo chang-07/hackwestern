@@ -305,9 +305,44 @@ function Interview({ question, onInterviewFinish }) {
     };
   }, [isPlaying, isRecording]); // Re-run when recording/playback state changes
   
+  // Function to save editor content to test.txt
+  const saveEditorContent = async () => {
+    try {
+      console.log('Saving code to test.txt...');
+      console.log('Code content:', code);
+      
+      const response = await fetch('http://localhost:5008/save-code', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          code: code || '// No code to save',
+          language: selectedLanguage 
+        }),
+      });
+      
+      const responseData = await response.json();
+      console.log('Save response:', responseData);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to save code: ${responseData.error || response.statusText}`);
+      }
+      
+      console.log('Code saved to test.txt successfully');
+      return true;
+    } catch (error) {
+      console.error('Error saving code:', error);
+      return false;
+    }
+  };
+  
   // Start recording audio
   const startRecording = async () => {
     try {
+      // Save current editor content to test.txt
+      await saveEditorContent();
+      
       audioChunksRef.current = [];
       const stream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
