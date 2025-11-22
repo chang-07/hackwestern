@@ -1,5 +1,17 @@
-[2025-11-22 15:02:28] User: My name is Chang. Uh it's very nice to meet you
+[2025-11-22 15:31:56] User: Yeah my name is Chang nice to meet you
 
-[2025-11-22 15:02:29] AI: Nice to meet you too, Chang. Let's start with the Two Sum problem. Can you describe your initial approach to solving this?
+[2025-11-22 15:31:57] AI: Nice to meet you too, Chang. To start, could you describe your approach to solving the Two Sum problem and walk me through the code you've written so far?
 
+
+[2025-11-22 15:33:33] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 15:33:34] System: Interview analysis completed. Overall score: 2.4/10
+
+[2025-11-22 15:33:34] TTS Output: Generated audio: response_chunk_0.mp3 (130030 bytes)
+
+[2025-11-22 15:35:42] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 15:35:42] System: Interview analysis completed. Overall score: 2.4/10
+
+[2025-11-22 15:35:43] TTS Output: Generated audio: response_chunk_0.mp3 (134209 bytes)
 

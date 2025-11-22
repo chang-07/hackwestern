@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 from dotenv import load_dotenv
 from analyzer import analyze_code_with_gemini
+from interview_analyzer import analyze_interview
 import os
 import re
 import time
@@ -693,8 +694,61 @@ def handle_text_to_speech():
                 log_conversation("Cleanup Error", f"Failed to remove audio file: {str(cleanup_error)}")
         return jsonify({'error': str(e)}), 500
 
+@app.route('/submit-interview', methods=['POST'])
+def submit_interview():
+    """Endpoint to handle interview submission and generate analysis"""
+    try:
+        # Generate the analysis report
+        analysis = analyze_interview()
+        
+        # Log the analysis for reference
+        log_conversation("System", f"Interview analysis completed. Overall score: {analysis['overall_score']}/10")
+        
+        # Generate a more detailed summary with Gemini
+        strengths = '\n- '.join(analysis['strengths'])
+        improvements = '\n- '.join(analysis['areas_for_improvement']) if analysis['areas_for_improvement'] else 'None'
+        
+        summary_prompt = (
+            "You are an experienced technical interviewer. Below is an analysis of a coding interview:\n\n"
+            f"Scores:\n"
+            f"- Communication: {analysis['detailed_scores']['communication']}/10\n"
+            f"- Charisma: {analysis['detailed_scores']['charisma']}/10\n"
+            f"- Responsiveness: {analysis['detailed_scores']['responsiveness']}/10\n"
+            f"- Technical Understanding: {analysis['detailed_scores']['technical_understanding']}/10\n"
+            f"- Problem Solving: {analysis['detailed_scores']['problem_solving']}/10\n\n"
+            f"Strengths:\n- {strengths}\n\n"
+            f"Areas for Improvement:\n- {improvements}\n\n"
+            "Please provide a concise, constructive summary of the candidate's performance that would be helpful "
+            "for both the interviewer and the candidate. Focus on specific, actionable feedback."
+        )
+
+        # Get a more detailed analysis from Gemini
+        try:
+            # Use the correct model name for text generation
+            model = genai.GenerativeModel('gemini-1.0-pro')
+            response = model.generate_content(summary_prompt)
+            detailed_summary = response.text if hasattr(response, 'text') else "Detailed analysis not available."
+        except Exception as e:
+            print(f"Error generating detailed analysis: {str(e)}")
+            detailed_summary = "Detailed analysis could not be generated."
+        
+        # Add the detailed summary to the response
+        analysis['detailed_summary'] = detailed_summary
+        
+        return jsonify({
+            'status': 'success',
+            'analysis': analysis
+        })
+        
+    except Exception as e:
+        print(f"Error in submit_interview: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
 if __name__ == '__main__':
-    # Ensure the uploads directory exists
+    # Ensure upload directory exists
     os.makedirs('uploads', exist_ok=True)
     port = int(os.environ.get('PORT', 5008))  # Use port from environment variable or default to 5008
     print(f"Starting server on port {port}...")

@@ -173,21 +173,110 @@ function ProblemDescription({ question }) {
 }
 
 function InterviewReview({ analysis }) {
-  // Remove the markdown code block markers if they exist
-  const cleanAnalysis = analysis ? 
-    analysis.replace(/^```markdown\n|```$/g, '') : 
-    'No analysis available';
-    
+  // Check if analysis is in the new format (object with analysis data)
+  const isNewFormat = analysis && typeof analysis === 'object' && 'overall_score' in analysis;
+  
+  // For backward compatibility with old string format
+  if (!isNewFormat) {
+    const cleanAnalysis = analysis ? 
+      analysis.replace(/^```markdown\n|```$/g, '') : 
+      'No analysis available';
+      
+    return (
+      <div className="interview-review-container">
+        <Header />
+        <div className="interview-review-content">
+          <h2>Interview Review</h2>
+          <div className="analysis-section">
+            <h3>Code Analysis</h3>
+            <div className="markdown-content">
+              <ReactMarkdown>{cleanAnalysis}</ReactMarkdown>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // New format with structured data
+  const { 
+    overall_score, 
+    detailed_scores = {},
+    strengths = [],
+    areas_for_improvement = [],
+    detailed_summary = ''
+  } = analysis;
+  
+  // Function to render a score bar
+  const renderScoreBar = (score, label) => (
+    <div key={label} className="score-item">
+      <div className="score-label">{label}</div>
+      <div className="score-bar-container">
+        <div 
+          className="score-bar" 
+          style={{ width: `${(score / 10) * 100}%` }}
+          aria-valuenow={score}
+          aria-valuemin="0"
+          aria-valuemax="10"
+        >
+          {score.toFixed(1)}/10
+        </div>
+      </div>
+    </div>
+  );
+  
   return (
     <div className="interview-review-container">
       <Header />
       <div className="interview-review-content">
         <h2>Interview Review</h2>
+        
+        <div className="overall-score">
+          <h3>Overall Score: <span className="score">{overall_score.toFixed(1)}/10</span></h3>
+        </div>
+        
+        <div className="scores-section">
+          <h3>Detailed Scores</h3>
+          {Object.entries(detailed_scores).map(([key, score]) => (
+            renderScoreBar(score, key.split('_').map(word => 
+              word.charAt(0).toUpperCase() + word.slice(1)
+            ).join(' '))
+          ))}
+        </div>
+        
         <div className="analysis-section">
-          <h3>Code Analysis</h3>
-          <div className="markdown-content">
-            <ReactMarkdown>{cleanAnalysis}</ReactMarkdown>
-          </div>
+          <h3>Strengths</h3>
+          <ul className="strengths-list">
+            {strengths.map((strength, index) => (
+              <li key={index} className="strength-item">
+                <span className="strength-icon">✓</span>
+                {strength}
+              </li>
+            ))}
+          </ul>
+          
+          {areas_for_improvement.length > 0 && (
+            <>
+              <h3>Areas for Improvement</h3>
+              <ul className="improvements-list">
+                {areas_for_improvement.map((item, index) => (
+                  <li key={index} className="improvement-item">
+                    <span className="improvement-icon">•</span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+          
+          {detailed_summary && (
+            <div className="detailed-summary">
+              <h3>Detailed Feedback</h3>
+              <div className="markdown-content">
+                <ReactMarkdown>{detailed_summary}</ReactMarkdown>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -517,7 +606,8 @@ function Interview({ question, onInterviewFinish }) {
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
-      const response = await fetch('http://127.0.0.1:5008/save-code', {
+      // First save the code
+      const saveResponse = await fetch('http://127.0.0.1:5008/save-code', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -525,31 +615,38 @@ function Interview({ question, onInterviewFinish }) {
         body: JSON.stringify({ code }),
       });
 
-      if (response.ok) {
-        console.log('Code saved successfully, starting analysis...');
-        const analysisResponse = await fetch('http://127.0.0.1:5008/analyze', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ 
-            code, 
-            question: {
-              title: question.title,
-              description: question.description || ''
-            }
-          }),
-        });
-        if(analysisResponse.ok) {
-          const analysisResult = await analysisResponse.json();
-          onInterviewFinish(analysisResult.analysis);
+      if (!saveResponse.ok) {
+        throw new Error('Failed to save code');
+      }
+
+      console.log('Code saved successfully, submitting interview for analysis...');
+      
+      // Then submit the interview for comprehensive analysis
+      const submitResponse = await fetch('http://127.0.0.1:5008/submit-interview', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          code, 
+          question: {
+            title: question.title,
+            description: question.description || ''
+          }
+        }),
+      });
+      
+      if (submitResponse.ok) {
+        const result = await submitResponse.json();
+        if (result.status === 'success' && result.analysis) {
+          // Pass the complete analysis object to the InterviewReview component
+          onInterviewFinish(result.analysis);
         } else {
-          console.error('Failed to get analysis.');
-          onInterviewFinish('Failed to retrieve analysis.');
+          throw new Error('Invalid response format from server');
         }
       } else {
-        console.error('Failed to save code');
-        onInterviewFinish('Failed to save code before analysis.');
+        const error = await submitResponse.json().catch(() => ({}));
+        throw new Error(error.message || 'Failed to analyze interview');
       }
     } catch (error) {
       console.error('Error during submit process:', error);
