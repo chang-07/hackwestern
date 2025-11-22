@@ -36,21 +36,20 @@ TEST_CASES = {
     ],
 }
 
-def save_code_to_file(code: str) -> Path:
+def save_code_to_file(code):
     SUBMISSIONS_DIR.mkdir(exist_ok=True)
     CODE_FILE.write_text(code, encoding="utf-8")
     return CODE_FILE
 
-def get_random_question() -> tuple[str, str]:
+def get_random_question():
     title = random.choice(list(QUESTIONS.keys()))
     description = QUESTIONS[title]
 
-    print(f"Title picked: {title}")
     print(f"\n=== RANDOMLY SELECTED QUESTION: {title} ===\n")
 
     return title, description
 
-def run_tests(code: str, title: str) -> tuple[int, int]:
+def run_tests(code, title):
     tests = TEST_CASES.get(title)
 
     if title == "Two Sum":
@@ -62,7 +61,7 @@ def run_tests(code: str, title: str) -> tuple[int, int]:
     else:
         return 0, 0
 
-    ns: dict = {}
+    ns = {}
     try:
         compiled = compile(code, "<candidate_code>", "exec")
         exec(compiled, ns)
@@ -102,7 +101,7 @@ def run_tests(code: str, title: str) -> tuple[int, int]:
 
     return passed, total
 
-def analyze_code_with_gemini(code: str, question: tuple[str, str] | None = None) -> str:
+def analyze_code_with_gemini(code, question):
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
         raise ValueError("Missing GEMINI_API_KEY environment variable.")
@@ -125,9 +124,9 @@ def analyze_code_with_gemini(code: str, question: tuple[str, str] | None = None)
         passed, total = run_tests(code, title)
 
     if total == 0:
-        test_result_line = "0/0 test cases passed."
+        result_line = "0/0 test cases passed."
     else:
-        test_result_line = f"{passed}/{total} test cases passed."
+        result_line = f"{passed}/{total} test cases passed."
 
     prompt = f"""
             You are evaluating a Python coding interview answer.
@@ -139,9 +138,9 @@ def analyze_code_with_gemini(code: str, question: tuple[str, str] | None = None)
             {syntax_result}
 
             Test results:
-            {test_result_line}
+            {result_line}
 
-            Start your answer with exactly this word: {test_result_line}
+            Start your answer with exactly this word: {result_line}
 
             After that, in three short sections:
 
