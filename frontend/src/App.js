@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react-router-dom';
 import Editor from '@monaco-editor/react';
+import VoiceChat from './components/VoiceChat';
+import SimpleVoiceChat from './components/SimpleVoiceChat';
 import './App.css';
 
 const questions = [
@@ -39,6 +42,7 @@ function App() {
   const [currentView, setCurrentView] = useState('login');
   const [selectedQuestion, setSelectedQuestion] = useState(null);
   const [analysisData, setAnalysisData] = useState(null);
+  const navigate = useNavigate();
 
   const handleLogin = () => {
     setCurrentView('questionSelector');
@@ -54,11 +58,25 @@ function App() {
     setCurrentView('interviewReview');
   };
 
+  // Add navigation to voice chat
+  const goToVoiceChat = () => {
+    navigate('/voice-chat');
+  };
+
   return (
     <div className="App">
       {currentView === 'login' && <Login onLogin={handleLogin} />}
-      {currentView === 'questionSelector' && <QuestionSelector onQuestionSelect={handleQuestionSelect} />}
-      {currentView === 'interview' && <Interview question={selectedQuestion} onInterviewFinish={handleInterviewFinish} />}
+      {currentView === 'questionSelector' && (
+        <>
+          <button onClick={goToVoiceChat} className="voice-chat-button">
+            🎤 Voice Chat
+          </button>
+          <QuestionSelector onQuestionSelect={handleQuestionSelect} />
+        </>
+      )}
+      {currentView === 'interview' && (
+        <Interview question={selectedQuestion} onInterviewFinish={handleInterviewFinish} />
+      )}
       {currentView === 'interviewReview' && <InterviewReview analysis={analysisData} />}
     </div>
   );
@@ -94,24 +112,11 @@ function QuestionSelector({ onQuestionSelect }) {
   );
 }
 
-
 function Header() {
   return (
     <header className="app-header">
       <h1>InterviewerMock</h1>
     </header>
-  );
-}
-
-function VoiceBox() {
-  return (
-    <div className="voice-box">
-      <div className="voice-bar"></div>
-      <div className="voice-bar"></div>
-      <div className="voice-bar"></div>
-      <div className="voice-bar"></div>
-      <div className="voice-bar"></div>
-    </div>
   );
 }
 
@@ -309,13 +314,25 @@ function Interview({ question, onInterviewFinish }) {
         </div>
         <div className="sidebar">
           <video ref={videoRef} className="camera-view" autoPlay playsInline></video>
-          <VoiceBox />
           <LanguageSelector selectedLanguage={selectedLanguage} onLanguageSelect={handleLanguageSelect} />
           <ProblemDescription question={question} />
+          <SimpleVoiceChat question={question} />
         </div>
       </div>
     </div>
   );
 }
 
-export default App;
+// Wrap the App with Router
+function AppWrapper() {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/voice-chat" element={<VoiceChat />} />
+        <Route path="/*" element={<App />} />
+      </Routes>
+    </Router>
+  );
+}
+
+export default AppWrapper;
