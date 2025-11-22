@@ -1,10 +1,11 @@
 body {
   margin: 0;
-  font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #1E1E1E;
-  color: #00FF41;
+  background-color: #202124;
+  color: #e8eaed;
+  font-size: 16px;
 }
 
 .App {
@@ -16,6 +17,7 @@ body {
 
 .login-container {
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
   width: 100%;
@@ -23,9 +25,10 @@ body {
 }
 
 .login-box {
-  background: #2a2a2a;
+  background: #303134;
   padding: 40px;
-  border: 1px solid #00FF41;
+  border-radius: 8px;
+  border: 1px solid #5f6368;
   width: 320px;
   text-align: center;
 }
@@ -33,84 +36,98 @@ body {
 .login-box h2 {
   margin-bottom: 20px;
   font-size: 24px;
-  color: #00FF41;
+  color: #e8eaed;
 }
 
 .login-box input {
   width: 100%;
   padding: 10px;
   margin-bottom: 15px;
-  border: 1px solid #00FF41;
-  background-color: #1E1E1E;
-  color: #00FF41;
+  border: 1px solid #5f6368;
+  background-color: #202124;
+  color: #e8eaed;
+  border-radius: 4px;
   box-sizing: border-box;
 }
 
 .login-box button {
   width: 100%;
   padding: 10px;
-  background-color: #00FF41;
-  color: #1E1E1E;
+  background-color: #89b4f8;
+  color: #202124;
   border: none;
+  border-radius: 4px;
   cursor: pointer;
   font-size: 16px;
   font-weight: bold;
 }
 
 .login-box button:hover {
-  background-color: #00b32c;
+  background-color: #a1c5f9;
 }
 
 .signup-text {
   margin-top: 20px;
   font-size: 14px;
-  color: #666;
+  color: #bdc1c6;
 }
 
 .signup-text a {
-  color: #00FF41;
+  color: #89b4f8;
   text-decoration: none;
 }
 
 .question-selector-container {
-  width: 80%;
-  max-width: 800px;
-  padding: 40px;
-  border: 1px solid #00FF41;
-  background-color: #2a2a2a;
-  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  background-color: #202124;
+}
+
+.question-selector-container h2 {
+  font-size: 24px;
+  color: #e8eaed;
 }
 
 .question-list {
   margin-top: 20px;
+  width: 80%;
+  max-width: 800px;
 }
 
 .question-item {
   padding: 20px;
-  border: 1px solid #00FF41;
+  border: 1px solid #5f6368;
+  border-radius: 8px;
   margin-bottom: 20px;
   cursor: pointer;
   transition: background-color 0.2s;
+  text-align: left;
 }
 
 .question-item:hover {
-  background-color: #00FF41;
-  color: #1E1E1E;
+  background-color: #303134;
 }
 
 .question-item h3 {
   margin-top: 0;
+  color: #89b4f8;
 }
 
 .app-header {
   text-align: center;
   padding: 10px;
-  border-bottom: 1px solid #00FF41;
+  border-bottom: 1px solid #5f6368;
+  background-color: #303134;
 }
 
 .app-header h1 {
   margin: 0;
   font-size: 24px;
+  color: #e8eaed;
 }
 
 .interview-wrapper {
@@ -136,19 +153,16 @@ body {
 .code-editor {
   width: 100%;
   height: 100%;
-  border: 1px solid #00FF41;
+  border: 1px solid #5f6368;
   box-sizing: border-box;
-  background: #1E1E1E;
-}
-
-.code-editor pre[class*="language-"] {
-  background: #1E1E1E !important;
+  border-radius: 8px;
+  overflow: hidden;
 }
 
 .code-editor textarea, .code-editor pre {
   font-family: 'Menlo', 'Monaco', 'Courier New', monospace !important;
-  font-size: 14px !important;
   line-height: 1.5 !important;
+  font-size: var(--code-font-size) !important;
 }
 
 .sidebar {
@@ -159,26 +173,28 @@ body {
 
 .camera-view {
   width: 100%;
-  border: 1px solid #00FF41;
+  border: 1px solid #5f6368;
   background-color: #000;
   transform: scaleX(-1);
+  border-radius: 8px;
 }
 
 .voice-box {
   margin-top: 20px;
   width: 100%;
   height: 100px;
-  border: 1px solid #00FF41;
+  border: 1px solid #5f6368;
   display: flex;
   justify-content: space-around;
   align-items: center;
   padding: 10px;
   box-sizing: border-box;
+  border-radius: 8px;
 }
 
 .voice-bar {
   width: 10px;
-  background-color: #00FF41;
+  background-color: #89b4f8;
   animation: voice-animation 1s infinite ease-in-out alternate;
 }
 
@@ -212,56 +228,48 @@ body {
 }
 
 .language-selector button {
-  background-color: #1E1E1E;
-  color: #00FF41;
-  border: 1px solid #00FF41;
+  background-color: #303134;
+  color: #89b4f8;
+  border: 1px solid #5f6368;
   padding: 10px 15px;
   cursor: pointer;
   margin-right: 10px;
   margin-bottom: 10px;
   transition: background-color 0.2s, color 0.2s;
+  border-radius: 4px;
 }
 
 .language-selector button:hover {
-  background-color: #00FF41;
-  color: #1E1E1E;
+  background-color: #3c4043;
 }
 
 .language-selector button.selected {
-  background-color: #00FF41;
-  color: #1E1E1E;
-  animation: selected-animation 0.5s ease-in-out;
-}
-
-@keyframes selected-animation {
-  0% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.1);
-  }
-  100% {
-    transform: scale(1);
-  }
+  background-color: #89b4f8;
+  color: #202124;
+  border-color: #89b4f8;
 }
 
 .problem-description {
-  border: 1px solid #00FF41;
+  border: 1px solid #5f6368;
   padding: 20px;
   margin-top: 20px;
   overflow-y: auto;
   flex-grow: 1;
+  background-color: #303134;
+  border-radius: 8px;
 }
 
 .problem-description h2 {
   margin-top: 0;
+  color: #89b4f8;
 }
 
 .problem-description .example {
-  background-color: #2a2a2a;
+  background-color: #202124;
   padding: 10px;
   margin-top: 10px;
-  border: 1px solid #00FF41;
+  border: 1px solid #5f6368;
+  border-radius: 4px;
 }
 
 .problem-description pre {

@@ -8,7 +8,7 @@ import 'prismjs/components/prism-java';
 import 'prismjs/components/prism-c';
 import 'prismjs/components/prism-cpp';
 import 'prismjs/components/prism-rust';
-import 'prismjs/themes/prism-tomorrow.css';
+import 'prismjs/themes/prism-okaidia.css';
 import './App.css';
 
 const questions = [
@@ -177,8 +177,35 @@ function ProblemDescription({ question }) {
 
 function Interview({ question }) {
   const videoRef = useRef(null);
+  const wrapperRef = useRef(null);
   const [code, setCode] = useState('');
   const [selectedLanguage, setSelectedLanguage] = useState('python');
+  const [fontSize, setFontSize] = useState(20); // Default font size
+
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.metaKey || event.ctrlKey) {
+        if (event.key === '=') {
+          event.preventDefault();
+          setFontSize(size => size + 1);
+        } else if (event.key === '-') {
+          event.preventDefault();
+          setFontSize(size => Math.max(8, size - 1));
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (wrapperRef.current) {
+      wrapperRef.current.style.setProperty('--code-font-size', `${fontSize}px`);
+    }
+  }, [fontSize]);
 
   useEffect(() => {
     const getCamera = async () => {
@@ -200,7 +227,7 @@ function Interview({ question }) {
   };
 
   return (
-    <div className="interview-wrapper">
+    <div className="interview-wrapper" ref={wrapperRef}>
       <Header />
       <div className="interview-container">
         <div className="main-content">
@@ -212,7 +239,6 @@ function Interview({ question }) {
             className="code-editor"
             style={{
               fontFamily: '"Menlo", "Monaco", "Courier New", monospace',
-              fontSize: 14,
               lineHeight: 1.5,
             }}
           />
