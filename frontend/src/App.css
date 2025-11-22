@@ -157,7 +157,7 @@ body {
   position: absolute;
   top: 10px;
   right: 30px;
-  z-index: 10;
+  z-index: 100;
 }
 
 .save-button {
@@ -279,4 +279,48 @@ body {
 .problem-description pre {
   white-space: pre-wrap;
   word-wrap: break-word;
+}
+
+.submit-button {
+  background-color: #34a853;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 5px 10px;
+  cursor: pointer;
+  margin-left: 10px;
+}
+
+.interview-review-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.interview-review-content {
+  padding: 20px;
+  overflow-y: auto;
+  flex-grow: 1;
+}
+
+.analysis-section {
+  background-color: #303134;
+  border: 1px solid #5f6368;
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.analysis-section h3 {
+  margin-top: 0;
+  color: #89b4f8;
+}
+
+.analysis-section pre {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  color: #e8eaed;
+  background-color: #202124;
+  padding: 10px;
+  border-radius: 4px;
 }

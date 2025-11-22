@@ -1,7 +1,7 @@
 import os
 import random
 from pathlib import Path
-from google import genai
+import google.generativeai as genai
 
 SUBMISSIONS_DIR = Path("submissions")
 CODE_FILE = SUBMISSIONS_DIR / "user_code.txt"
@@ -50,7 +50,9 @@ def get_random_question():
     return title, description
 
 def run_tests(code, title):
-    tests = TEST_CASES.get(title)
+    # Ensure we're using a string key to access TEST_CASES
+    test_key = title.get('title', title) if isinstance(title, dict) else title
+    tests = TEST_CASES.get(test_key, [])
 
     if title == "Two Sum":
         func_name = "twoSum"
@@ -106,9 +108,24 @@ def analyze_code_with_gemini(code, question):
     if not api_key:
         raise ValueError("Missing GEMINI_API_KEY environment variable.")
 
-    client = genai.Client(api_key=api_key)
+    # Configure with the correct API key
+    genai.configure(api_key=api_key)
+    
+    # Use the latest stable model
+    model_name = 'gemini-pro-latest'
+    print(f"Using model: {model_name}")
+    model = genai.GenerativeModel(model_name)
 
-    title, description = question or get_random_question()
+    # Handle different question formats
+    if isinstance(question, (list, tuple)) and len(question) == 2:
+        title, description = question
+    elif isinstance(question, dict):
+        title = question.get('title', 'Coding Question')
+        description = question.get('description', '')
+    else:
+        # If question is just a string, use it as the title
+        title = str(question) if question is not None else 'Coding Question'
+        description = ''
 
     try:
         compile(code, "<candidate_code>", "exec")
@@ -118,10 +135,15 @@ def analyze_code_with_gemini(code, question):
         syntax_result = f"Syntax error on line {e.lineno}, column {e.offset}: {e.msg}"
         has_syntax_error = True
 
+    # Get the test cases using the question title as a string
+    test_cases_key = title
+    if isinstance(title, dict):
+        test_cases_key = title.get('title', '')  # Extract just the title string if it's a dict
+    
     if has_syntax_error:
-        passed, total = 0, len(TEST_CASES.get(title, []))
+        passed, total = 0, len(TEST_CASES.get(test_cases_key, []))
     else:
-        passed, total = run_tests(code, title)
+        passed, total = run_tests(code, test_cases_key)
 
     if total == 0:
         result_line = "0/0 test cases passed."
@@ -160,9 +182,6 @@ def analyze_code_with_gemini(code, question):
             {code}
             """
     
-    response = client.models.generate_content(
-        model="gemini-2.5-flash",
-        contents=prompt,
-    )
+    response = model.generate_content(prompt)
 
     return response.text
