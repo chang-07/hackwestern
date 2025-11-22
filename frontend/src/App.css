@@ -1,38 +1,270 @@
+body {
+  margin: 0;
+  font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #1E1E1E;
+  color: #00FF41;
+}
+
 .App {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+}
+
+.login-box {
+  background: #2a2a2a;
+  padding: 40px;
+  border: 1px solid #00FF41;
+  width: 320px;
   text-align: center;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+.login-box h2 {
+  margin-bottom: 20px;
+  font-size: 24px;
+  color: #00FF41;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
+.login-box input {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 15px;
+  border: 1px solid #00FF41;
+  background-color: #1E1E1E;
+  color: #00FF41;
+  box-sizing: border-box;
 }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
+.login-box button {
+  width: 100%;
+  padding: 10px;
+  background-color: #00FF41;
+  color: #1E1E1E;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.login-box button:hover {
+  background-color: #00b32c;
+}
+
+.signup-text {
+  margin-top: 20px;
+  font-size: 14px;
+  color: #666;
+}
+
+.signup-text a {
+  color: #00FF41;
+  text-decoration: none;
+}
+
+.question-selector-container {
+  width: 80%;
+  max-width: 800px;
+  padding: 40px;
+  border: 1px solid #00FF41;
+  background-color: #2a2a2a;
+  text-align: center;
+}
+
+.question-list {
+  margin-top: 20px;
+}
+
+.question-item {
+  padding: 20px;
+  border: 1px solid #00FF41;
+  margin-bottom: 20px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.question-item:hover {
+  background-color: #00FF41;
+  color: #1E1E1E;
+}
+
+.question-item h3 {
+  margin-top: 0;
+}
+
+.app-header {
+  text-align: center;
+  padding: 10px;
+  border-bottom: 1px solid #00FF41;
+}
+
+.app-header h1 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.interview-wrapper {
+  width: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
+}
+
+.interview-container {
+  display: flex;
+  flex-grow: 1;
+  padding: 20px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.main-content {
+  flex-grow: 1;
+  padding-right: 20px;
+}
+
+.code-editor {
+  width: 100%;
+  height: 100%;
+  border: 1px solid #00FF41;
+  box-sizing: border-box;
+  background: #1E1E1E;
+}
+
+.code-editor pre[class*="language-"] {
+  background: #1E1E1E !important;
+}
+
+.code-editor textarea, .code-editor pre {
+  font-family: 'Menlo', 'Monaco', 'Courier New', monospace !important;
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+}
+
+.sidebar {
+  width: 400px;
+  display: flex;
+  flex-direction: column;
+}
+
+.camera-view {
+  width: 100%;
+  border: 1px solid #00FF41;
+  background-color: #000;
+  transform: scaleX(-1);
+}
+
+.voice-box {
+  margin-top: 20px;
+  width: 100%;
+  height: 100px;
+  border: 1px solid #00FF41;
+  display: flex;
+  justify-content: space-around;
   align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+  padding: 10px;
+  box-sizing: border-box;
 }
 
-.App-link {
-  color: #61dafb;
+.voice-bar {
+  width: 10px;
+  background-color: #00FF41;
+  animation: voice-animation 1s infinite ease-in-out alternate;
 }
 
-@keyframes App-logo-spin {
+.voice-bar:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.voice-bar:nth-child(3) {
+  animation-delay: 0.4s;
+}
+.voice-bar:nth-child(4) {
+  animation-delay: 0.6s;
+}
+.voice-bar:nth-child(5) {
+  animation-delay: 0.8s;
+}
+
+@keyframes voice-animation {
   from {
-    transform: rotate(0deg);
+    height: 5%;
   }
   to {
-    transform: rotate(360deg);
+    height: 95%;
   }
+}
+
+.language-selector {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+.language-selector button {
+  background-color: #1E1E1E;
+  color: #00FF41;
+  border: 1px solid #00FF41;
+  padding: 10px 15px;
+  cursor: pointer;
+  margin-right: 10px;
+  margin-bottom: 10px;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.language-selector button:hover {
+  background-color: #00FF41;
+  color: #1E1E1E;
+}
+
+.language-selector button.selected {
+  background-color: #00FF41;
+  color: #1E1E1E;
+  animation: selected-animation 0.5s ease-in-out;
+}
+
+@keyframes selected-animation {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.problem-description {
+  border: 1px solid #00FF41;
+  padding: 20px;
+  margin-top: 20px;
+  overflow-y: auto;
+  flex-grow: 1;
+}
+
+.problem-description h2 {
+  margin-top: 0;
+}
+
+.problem-description .example {
+  background-color: #2a2a2a;
+  padding: 10px;
+  margin-top: 10px;
+  border: 1px solid #00FF41;
+}
+
+.problem-description pre {
+  white-space: pre-wrap;
+  word-wrap: break-word;
 }
