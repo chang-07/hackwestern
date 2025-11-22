@@ -263,7 +263,7 @@ function Interview({ question, onInterviewFinish }) {
     try {
       audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
       analyserRef.current = audioContextRef.current.createAnalyser();
-      analyserRef.current.fftSize = 256;
+      analyserRef.current.fftSize = 64; // Smaller FFT size for smoother visualization
       
       // Start the visualization loop
       const visualize = () => {
@@ -271,66 +271,180 @@ function Interview({ question, onInterviewFinish }) {
         
         const bufferLength = analyserRef.current.frequencyBinCount;
         const dataArray = new Uint8Array(bufferLength);
-        analyserRef.current.getByteFrequencyData(dataArray);
-        setAudioData(dataArray);
         
         if (isPlaying || isRecording) {
+          analyserRef.current.getByteFrequencyData(dataArray);
+          // Only update state if there's actual audio data
+          if (dataArray.some(level => level > 0)) {
+            setAudioData([...dataArray]); // Create a new array to trigger re-render
+          }
           animationFrameId.current = requestAnimationFrame(visualize);
         }
       };
       
-      visualize();
+      // Start the visualization loop
+      animationFrameId.current = requestAnimationFrame(visualize);
     } catch (err) {
       console.error('Error initializing audio context:', err);
     }
   };
   
-  // Set up audio context on mount
+  // Set up audio context on mount and clean up on unmount
   useEffect(() => {
     initAudioContext();
     
+    // Cleanup function
     return () => {
       if (animationFrameId.current) {
         cancelAnimationFrame(animationFrameId.current);
+        animationFrameId.current = null;
       }
       if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
         audioContextRef.current.close();
       }
     };
-  }, []);
+  }, [isPlaying, isRecording]); // Re-run when recording/playback state changes
   
   // Start recording audio
   const startRecording = async () => {
     try {
       audioChunksRef.current = [];
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          sampleRate: 16000
+        } 
+      });
       
-      // Set up media recorder
-      mediaRecorderRef.current = new MediaRecorder(stream);
+      // Set up media recorder with specific MIME type
+      const options = {
+        mimeType: 'audio/webm;codecs=opus',
+        audioBitsPerSecond: 128000
+      };
+      
+      // Check if the MIME type is supported
+      let mediaRecorder;
+      if (MediaRecorder.isTypeSupported(options.mimeType)) {
+        mediaRecorder = new MediaRecorder(stream, options);
+        console.log(`Using MIME type: ${options.mimeType}`);
+      } else {
+        console.warn(`MIME type ${options.mimeType} not supported, using default`);
+        mediaRecorder = new MediaRecorder(stream);
+      }
+      
+      mediaRecorderRef.current = mediaRecorder;
       
       // Set up audio processing
       if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
         await audioContextRef.current.resume();
       }
       
+      // Create a new analyser for the recording stream
       const source = audioContextRef.current.createMediaStreamSource(stream);
+      analyserRef.current = audioContextRef.current.createAnalyser();
+      analyserRef.current.fftSize = 64;
       source.connect(analyserRef.current);
-      analyserRef.current.connect(audioContextRef.current.destination);
+      
+      // Start the visualization
+      if (animationFrameId.current) {
+        cancelAnimationFrame(animationFrameId.current);
+      }
+      
+      const visualize = () => {
+        if (!analyserRef.current) return;
+        
+        const bufferLength = analyserRef.current.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+        analyserRef.current.getByteFrequencyData(dataArray);
+        
+        // Update the visualizer with new data
+        setAudioData([...dataArray]);
+        
+        // Continue the animation loop
+        animationFrameId.current = requestAnimationFrame(visualize);
+      };
+      
+      // Start the visualization loop
+      animationFrameId.current = requestAnimationFrame(visualize);
       
       // Handle data available event
-      mediaRecorderRef.current.ondataavailable = (event) => {
+      mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
+          console.log(`Collected audio chunk: ${event.data.size} bytes`);
           audioChunksRef.current.push(event.data);
         }
       };
       
-      mediaRecorderRef.current.start();
+      mediaRecorder.start(100); // Request data every 100ms
+      console.log('Recording started with MIME type:', mediaRecorder.mimeType);
       setIsRecording(true);
       setIsPlaying(false);
       
     } catch (err) {
       console.error('Error starting recording:', err);
       alert('Could not access microphone. Please ensure you have granted microphone permissions.');
+    }
+  };
+  
+  // Function to send audio to backend for processing
+  const sendToElevenLabs = async (audioBlob) => {
+    try {
+      const formData = new FormData();
+      formData.append('audio', audioBlob, 'recording.webm');
+      
+      // Show loading state
+      setIsProcessing(true);
+      
+      // Send to backend
+      const response = await fetch('http://localhost:5008/process_audio', {
+        method: 'POST',
+        body: formData,
+        // Don't set Content-Type header, let the browser set it with the correct boundary
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to process audio');
+      }
+      
+      // Get the audio response as a blob
+      const audioData = await response.blob();
+      
+      if (audioData.size === 0) {
+        throw new Error('Received empty audio response');
+      }
+      
+      // Create a URL for the audio blob
+      const audioUrl = URL.createObjectURL(audioData);
+      const audio = new Audio(audioUrl);
+      
+      // Set up event handlers
+      audio.onended = () => {
+        console.log('Playback finished');
+        setIsPlaying(false);
+      };
+      
+      audio.onerror = (e) => {
+        console.error('Audio playback error:', e);
+        setIsPlaying(false);
+      };
+      
+      console.log('Starting playback...');
+      setIsPlaying(true);
+      await audio.play().catch(e => {
+        console.error('Error playing audio:', e);
+        setIsPlaying(false);
+        throw e;
+      });
+      
+    } catch (err) {
+      console.error('Error processing audio:', err);
+      alert(`Error: ${err.message || 'Failed to process audio'}`);
+      throw err; // Re-throw to be caught by the caller
+    } finally {
+      setIsProcessing(false);
+      setIsRecording(false);
     }
   };
   
@@ -343,28 +457,18 @@ function Interview({ question, onInterviewFinish }) {
     
     // Process the recorded audio
     mediaRecorderRef.current.onstop = async () => {
-      setIsProcessing(true);
-      
       try {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
-        // Here you would typically send the audio to your backend for processing
-        // For now, we'll just simulate processing
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Use the actual MIME type that the MediaRecorder was using
+        const mimeType = mediaRecorderRef.current.mimeType || 'audio/webm';
+        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+        console.log(`Sending audio to backend (${audioBlob.size} bytes, type: ${mimeType})`);
         
-        // Simulate playing back the recorded audio
-        setIsPlaying(true);
-        const audioUrl = URL.createObjectURL(audioBlob);
-        const audio = new Audio(audioUrl);
-        audio.onended = () => {
-          setIsPlaying(false);
-        };
-        await audio.play();
+        // Send audio to backend for processing
+        await sendToElevenLabs(audioBlob);
         
       } catch (err) {
-        console.error('Error processing audio:', err);
-      } finally {
-        setIsProcessing(false);
-        setIsRecording(false);
+        console.error('Error in recording processing:', err);
+        // Error is already handled in sendToElevenLabs
       }
     };
   };
