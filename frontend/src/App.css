@@ -227,32 +227,69 @@ body {
 }
 
 .language-selector {
-  margin-top: 20px;
+  margin: 5px 0; /* Reduced vertical margin */
+  padding: 0 15px; /* Match camera container padding */
   display: flex;
   justify-content: flex-start;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  gap: 10px; /* Slightly increased gap */
+  width: 400px; /* Match sidebar width */
+  max-width: 100%;
+  overflow-x: auto;
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+  box-sizing: border-box;
+  min-height: 50px; /* Slightly reduced height */
+  align-items: center; /* Center vertically */
+}
+
+.language-selector::-webkit-scrollbar {
+  display: none;  /* Hide scrollbar for Chrome, Safari and Opera */
 }
 
 .language-selector button {
   background-color: #303134;
   color: #89b4f8;
   border: 1px solid #5f6368;
-  padding: 10px 15px;
+  padding: 8px 16px; /* Increased horizontal padding */
+  height: auto;
+  min-height: 36px;
+  min-width: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  margin-right: 10px;
-  margin-bottom: 10px;
-  transition: background-color 0.2s, color 0.2s;
+  font-size: 14px;
+  line-height: 1.2;
   border-radius: 4px;
+  white-space: nowrap; /* Keep text on one line */
+  text-align: center;
+  flex: 0 0 auto;
+  transition: all 0.2s ease;
+  margin: 0;
+  box-sizing: border-box;
 }
 
 .language-selector button:hover {
   background-color: #3c4043;
+  transform: translateY(-1px);
 }
 
 .language-selector button.selected {
   background-color: #89b4f8;
   color: #202124;
   border-color: #89b4f8;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.visualizer-container {
+  margin: 15px 0;
+  width: 100%;
+  background-color: #202124;
+  border: 1px solid #5f6368;
+  border-radius: 8px;
+  padding: 10px;
+  box-sizing: border-box;
 }
 
 .problem-description {
@@ -283,11 +320,37 @@ body {
   word-wrap: break-word;
 }
 
+.main-content {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.editor-container {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.visualizer-container {
+  width: 100%;
+  height: 60px;
+  background-color: #1e1e1e;
+  border-top: 1px solid #333;
+  padding: 10px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .submit-button-container {
-  position: absolute;
-  bottom: 24px;
-  right: 24px;
-  z-index: 1000;
+  pointer-events: auto;
+}
+
+.record-button-container {
+  pointer-events: auto;
 }
 
 .submit-button {
