@@ -13,6 +13,7 @@ from pydub import AudioSegment
 from pydub.silence import split_on_silence
 from pydub.playback import play
 import google.generativeai as genai
+from datetime import datetime
 
 # Load environment variables
 load_dotenv(dotenv_path='app.env')
@@ -21,6 +22,37 @@ load_dotenv(dotenv_path='app.env')
 ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 VOICE_ID = os.getenv("VOICE_ID")
+
+# Ensure logs directory exists
+os.makedirs('conversation_logs', exist_ok=True)
+
+# Track if this is a new session
+session_started = False
+
+def log_conversation(speaker, text):
+    """Log conversation to a single file with timestamp"""
+    global session_started
+    
+    try:
+        # Ensure logs directory exists
+        os.makedirs('conversation_logs', exist_ok=True)
+        
+        log_file = 'conversation_logs/conversation_log.txt'
+        
+        # If this is the first message from the user in a new session, clear the file
+        if speaker == "User" and not session_started:
+            mode = 'w'  # Overwrite existing file
+            session_started = True
+        else:
+            mode = 'a'  # Append to existing file
+        
+        with open(log_file, mode, encoding='utf-8') as f:
+            f.write(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {speaker}: {text}\n\n")
+            
+        return log_file
+    except Exception as e:
+        print(f"Error logging conversation: {str(e)}")
+        return None
 
 # Configure Gemini
 genai.configure(api_key=GEMINI_API_KEY)
@@ -496,89 +528,64 @@ def analyze():
 
 @app.route("/process_audio", methods=["POST"])
 def process_audio():
+    """Process audio input and return a response"""
     print("\n=== New Audio Processing Request ===")
-    print(f"1. Request Headers: {dict(request.headers)}")
-    print(f"2. Request Content-Type: {request.content_type}")
-    print(f"3. Request Content-Length: {request.content_length} bytes")
-    print(f"4. Request Method: {request.method}")
-    print(f"5. Request URL: {request.url}")
-    print(f"6. Request Form: {request.form}")
-    print(f"7. Request Files: {request.files}")
-    print("8. Checking for audio file in request...")
-    
-    if "audio" not in request.files:
-        print("ERROR: No audio file found in request")
-        return jsonify({"error": "No audio file provided"}), 400
-
-    file = request.files["audio"]
-    if not file or file.filename == '':
-        print("ERROR: Empty file provided")
-        return jsonify({"error": "Empty file provided"}), 400
-        
-    input_path = "uploads/input.wav"
-    print(f"2. Received audio file: {file.filename} (content type: {file.content_type}, content length: {request.content_length} bytes)")
     
     try:
-        # Ensure uploads directory exists
-        os.makedirs('uploads', exist_ok=True)
-        print("3. Saving uploaded file...")
+        # Log request details for debugging
+        print(f"1. Request Headers: {dict(request.headers)}")
+        print(f"2. Request Content-Type: {request.content_type}")
+        print(f"3. Request Content-Length: {request.content_length} bytes")
+        print(f"4. Request Method: {request.method}")
+        print(f"5. Request URL: {request.url}")
+        print(f"6. Request Form: {request.form}")
+        print(f"7. Request Files: {request.files}")
         
-        # Save the uploaded file
-        file.save(input_path)
-        file_size = os.path.getsize(input_path)
-        print(f"4. File saved to {input_path} (size: {file_size} bytes)")
+        # Check if the post request has the file part
+        if 'audio' not in request.files:
+            print("8. No audio file part in the request")
+            return jsonify({"error": "No audio file provided"}), 400
+            
+        audio_file = request.files['audio']
         
-        # Check if file is too small to be a valid audio file
-        if file_size < 100:  # Arbitrary small size threshold
-            print(f"ERROR: File is too small to be a valid audio file (size: {file_size} bytes)")
-            return jsonify({"error": "Audio file is too small"}), 400
+        # If user does not select file, browser also
+        # submit an empty part without filename
+        if audio_file.filename == '':
+            print("8. No selected file")
+            return jsonify({"error": "No selected file"}), 400
             
-        # Read first few bytes to check file signature
-        with open(input_path, 'rb') as f:
-            header = f.read(12)  # Read 12 bytes for both WAV and WebM headers
+        if audio_file:
+            print(f"8. Received audio file: {audio_file.filename} (content type: {audio_file.content_type}, content length: {audio_file.content_length} bytes)")
             
-        # Check for supported audio formats
-        is_wav = len(header) >= 12 and header.startswith(b'RIFF') and header[8:12] == b'WAVE'
-        is_webm = len(header) >= 4 and header[0:4] == b'\x1aE\xdf\xa3'
-        is_ogg = len(header) >= 4 and header.startswith(b'OggS')
-        
-        if not (is_wav or is_webm or is_ogg):
-            print(f"ERROR: Unsupported audio format. Header: {header.hex()}")
-            return jsonify({
-                "error": "Unsupported audio format. Please use WAV, WebM, or Ogg format.",
-                "header": header.hex(),
-                "supported_formats": ["WAV", "WebM", "Ogg"]
-            }), 400
+            # Save the uploaded file
+            audio_path = os.path.join('uploads', 'input.wav')
+            audio_file.save(audio_path)
+            print(f"9. File saved to {audio_path} (size: {os.path.getsize(audio_path)} bytes)")
             
-        print(f"Detected audio format: {'WAV' if is_wav else 'WebM' if is_webm else 'Ogg'}")
-
-        # 1. Speech-to-text
-        print("5. Converting speech to text...")
-        try:
-            text = speech_to_text(input_path)
-            print(f"6. Speech-to-Text Result: {text}")
+            # Convert speech to text
+            print("10. Converting speech to text...")
+            text = speech_to_text(audio_path)
             
             if not text:
-                print("ERROR: Speech-to-text returned empty result")
-                return jsonify({"error": "Could not transcribe audio. Please try speaking more clearly."}), 400
-        except Exception as e:
-            print(f"ERROR in speech_to_text: {str(e)}")
-            import traceback
-            traceback.print_exc()
-            return jsonify({"error": f"Error processing audio: {str(e)}"}), 500
-
-        # 2. Process with Gemini
-        print("7. Processing with Gemini...")
-        
-        # Read the current content of test.txt
-        test_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'test.txt')
-        try:
-            with open(test_file_path, 'r') as f:
-                test_code = f.read()
-            print(f"Current code in test.txt ({len(test_code)} chars):\n{test_code[:200]}...")
+                return jsonify({"error": "Failed to transcribe audio"}), 500
+                
+            print(f"11. Speech-to-Text Result: {text}")
             
-            # Add the code context to the user's question with an interviewer-style prompt
-            context = f"""You are a technical interviewer. The candidate has shared this code for the Two Sum problem:
+            # Log user's input
+            log_conversation("User", text)
+            
+            # Process with Gemini
+            print("12. Processing with Gemini...")
+            
+            # Read the current content of test.txt
+            test_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'test.txt')
+            try:
+                with open(test_file_path, 'r') as f:
+                    test_code = f.read()
+                print(f"Current code in test.txt ({len(test_code)} chars):\n{test_code[:200]}{'...' if len(test_code) > 200 else ''}")
+                
+                # Add the code context to the user's question with an interviewer-style prompt
+                context = f"""You are a technical interviewer. The candidate has shared this code for the Two Sum problem:
 ```python
 {test_code}
 ```
@@ -586,23 +593,40 @@ def process_audio():
 Candidate's question: {text}
 
 Respond concisely (1-2 sentences max) in an interview-appropriate way. Be helpful but don't give away the solution. Ask guiding questions if needed."""
-            gemini_output = run_gemini(context)
-        except FileNotFoundError:
-            print("test.txt not found, processing without code context")
-            gemini_output = run_gemini(text)
-        print(f"8. Gemini Response: {gemini_output[:200]}...")  # Print first 200 chars
-
-        # 3. Text-to-speech
-        print("9. Converting response to speech...")
-        audio_path = text_to_speech(gemini_output)
-        
-        if not audio_path or not os.path.exists(audio_path):
-            print(f"ERROR: Failed to generate speech. Audio path: {audio_path}")
-            return jsonify({"error": "Failed to generate speech"}), 500
+                gemini_output = run_gemini(context)
+            except FileNotFoundError:
+                print("test.txt not found, processing without code context")
+                gemini_output = run_gemini(text)
+                
+            print(f"13. Gemini Response: {gemini_output[:200]}...")  # Print first 200 chars
             
-        print(f"10. Audio generated successfully at {audio_path} (size: {os.path.getsize(audio_path)} bytes)")
-        return send_file(audio_path, mimetype="audio/mpeg")
-        
+            # Log AI's response
+            log_conversation("AI", gemini_output)
+            
+            # 3. Text-to-speech
+            print("14. Converting response to speech...")
+            audio_path = text_to_speech(gemini_output)
+            
+            if not audio_path or not os.path.exists(audio_path):
+                error_msg = f"Failed to generate speech. Audio path: {audio_path}"
+                print(f"ERROR: {error_msg}")
+                log_conversation("Error", error_msg)
+                return jsonify({"error": "Failed to generate speech"}), 500
+                
+            print(f"15. Audio generated successfully at {audio_path} (size: {os.path.getsize(audio_path)} bytes)")
+            
+            # 4. Send the audio file back
+            response = send_file(
+                audio_path,
+                mimetype='audio/mpeg',
+                as_attachment=True,
+                download_name='response.mp3'
+            )
+            
+            # Clean up the audio file after sending
+            response.call_on_close(lambda: os.remove(audio_path) if audio_path and os.path.exists(audio_path) else None)
+            return response
+            
     except Exception as e:
         import traceback
         error_trace = traceback.format_exc()
@@ -629,11 +653,19 @@ def handle_text_to_speech():
             
         print(f"Received TTS request for text: {text[:100]}...")
         
+        # Log the text that will be converted to speech
+        log_conversation("TTS Input", text)
+        
         # Generate speech using ElevenLabs
         audio_path = text_to_speech(text)
         
         if not audio_path or not os.path.exists(audio_path):
+            error_msg = f"Failed to generate speech for text: {text[:200]}..."
+            log_conversation("TTS Error", error_msg)
             return jsonify({'error': 'Failed to generate speech'}), 500
+            
+        # Log successful TTS generation
+        log_conversation("TTS Output", f"Generated audio: {os.path.basename(audio_path)} ({os.path.getsize(audio_path)} bytes)")
             
         # Return the audio file
         response = send_file(
@@ -649,13 +681,16 @@ def handle_text_to_speech():
         return response
         
     except Exception as e:
-        print(f"Error in text-to-speech endpoint: {str(e)}")
+        error_msg = f"Error in text-to-speech endpoint: {str(e)}"
+        print(error_msg)
+        log_conversation("TTS Error", error_msg)
+        
         # Clean up in case of error
         if audio_path and os.path.exists(audio_path):
             try:
                 os.remove(audio_path)
-            except:
-                pass
+            except Exception as cleanup_error:
+                log_conversation("Cleanup Error", f"Failed to remove audio file: {str(cleanup_error)}")
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':

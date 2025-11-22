@@ -1,0 +1,5 @@
+[2025-11-22 15:02:28] User: My name is Chang. Uh it's very nice to meet you
+
+[2025-11-22 15:02:29] AI: Nice to meet you too, Chang. Let's start with the Two Sum problem. Can you describe your initial approach to solving this?
+
+
