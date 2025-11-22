@@ -35,12 +35,19 @@ TEST_CASES = {
     ],
 }
 
-def save_code_to_file(code):
+
+def save_code_to_file(code: str) -> Path:
+    """Save the user's pasted code to submissions/user_code.txt."""
     SUBMISSIONS_DIR.mkdir(exist_ok=True)
     CODE_FILE.write_text(code, encoding="utf-8")
     return CODE_FILE
 
-def detect_question_and_func(ns):
+
+def detect_question_and_func(ns: dict) -> tuple[str | None, str | None]:
+    """
+    Look at the executed namespace and infer which problem is being solved
+    based on the function name.
+    """
     if "twoSum" in ns and callable(ns["twoSum"]):
         return "Two Sum", "twoSum"
     if "isValid" in ns and callable(ns["isValid"]):
@@ -49,7 +56,12 @@ def detect_question_and_func(ns):
         return "Maximum Subarray", "maxSubArray"
     return None, None
 
-def run_tests_with_ns(ns, title, func_name):
+
+def run_tests_with_ns(ns: dict, title: str, func_name: str) -> tuple[int, int]:
+    """
+    Run the test cases for the given title using the function from ns.
+    Returns (passed, total).
+    """
     tests = TEST_CASES.get(title, [])
     if not tests:
         return 0, 0
@@ -70,32 +82,28 @@ def run_tests_with_ns(ns, title, func_name):
                 result = func(nums, target)
                 if isinstance(result, list) and (result == expected or result == expected[::-1]):
                     passed += 1
+
             elif title == "Valid Parentheses":
                 s = case["s"]
                 expected = case["expected"]
                 result = func(s)
                 if result == expected:
                     passed += 1
+
             elif title == "Maximum Subarray":
                 nums = case["nums"]
                 expected = case["expected"]
                 result = func(nums)
                 if result == expected:
                     passed += 1
+
         except Exception:
             continue
 
     return passed, total
 
 
-def analyze_code_with_gemini(code):
-    """
-    - Syntax check
-    - Execute code
-    - Detect which problem it's solving by function name
-    - Run relevant tests
-    - Send everything to Gemini
-    """
+def analyze_code_with_gemini(code: str) -> str:
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
         raise ValueError("Missing GEMINI_API_KEY environment variable.")
@@ -109,27 +117,26 @@ def analyze_code_with_gemini(code):
     except SyntaxError as e:
         syntax_result = f"Syntax error on line {e.lineno}, column {e.offset}: {e.msg}"
         has_syntax_error = True
+        compiled = None
 
-    title = None
-    func_name = None
+    ns: dict = {}
+    title: str | None = None
+    func_name: str | None = None
     passed = 0
     total = 0
 
-    ns = {}
-
-    if not has_syntax_error:
+    if not has_syntax_error and compiled is not None:
         try:
             exec(compiled, ns)
         except Exception as e:
             syntax_result = f"Runtime error during execution: {type(e).__name__}: {e}"
             has_syntax_error = True
-
-    if not has_syntax_error:
-        title, func_name = detect_question_and_func(ns)
-        if title is not None:
-            passed, total = run_tests_with_ns(ns, title, func_name)
         else:
-            passed, total = 0, 0
+            title, func_name = detect_question_and_func(ns)
+            if title is not None and func_name is not None:
+                passed, total = run_tests_with_ns(ns, title, func_name)
+            else:
+                passed, total = 0, 0
 
     test_result_line = f"{passed}/{total} test cases passed" if total > 0 else "0/0 test cases passed"
 
