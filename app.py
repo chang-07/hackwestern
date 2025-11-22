@@ -352,16 +352,38 @@ def hello_world():
 
 @app.route('/save-code', methods=['POST'])
 def save_code():
-    data = request.get_json()
-    if 'code' not in data:
-        return jsonify({'error': 'Missing code in request body'}), 400
-
+    print("\n=== Save Code Request ===")
+    print(f"Request data: {request.data}")
+    
     try:
-        with open('test.txt', 'w') as f:
+        data = request.get_json()
+        print(f"Parsed JSON data: {data}")
+        
+        if not data or 'code' not in data:
+            error_msg = 'Missing code in request body'
+            print(f"Error: {error_msg}")
+            return jsonify({'error': error_msg}), 400
+
+        # Get the absolute path to save the file
+        file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'test.txt')
+        print(f"Saving to file: {file_path}")
+        
+        # Ensure the directory exists
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        
+        # Write the code to the file
+        with open(file_path, 'w', encoding='utf-8') as f:
             f.write(data['code'])
-        return jsonify({'message': 'Code saved successfully'}), 200
+            
+        print(f"Successfully wrote {len(data['code'])} characters to {file_path}")
+        return jsonify({'message': 'Code saved successfully', 'path': file_path}), 200
+        
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        error_msg = f"Error saving code: {str(e)}"
+        print(error_msg)
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': error_msg}), 500
 
 @app.route('/analyze', methods=['POST'])
 def analyze():
