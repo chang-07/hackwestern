@@ -72,6 +72,36 @@ body {
   text-decoration: none;
 }
 
+.question-selector-container {
+  width: 80%;
+  max-width: 800px;
+  padding: 40px;
+  border: 1px solid #00FF41;
+  background-color: #2a2a2a;
+  text-align: center;
+}
+
+.question-list {
+  margin-top: 20px;
+}
+
+.question-item {
+  padding: 20px;
+  border: 1px solid #00FF41;
+  margin-bottom: 20px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.question-item:hover {
+  background-color: #00FF41;
+  color: #1E1E1E;
+}
+
+.question-item h3 {
+  margin-top: 0;
+}
+
 .app-header {
   text-align: center;
   padding: 10px;
@@ -106,15 +136,19 @@ body {
 .code-editor {
   width: 100%;
   height: 100%;
-  background-color: #1E1E1E;
   border: 1px solid #00FF41;
-  padding: 20px;
-  font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
-  font-size: 14px;
-  line-height: 1.5;
-  resize: none;
   box-sizing: border-box;
-  color: #00FF41;
+  background: #1E1E1E;
+}
+
+.code-editor pre[class*="language-"] {
+  background: #1E1E1E !important;
+}
+
+.code-editor textarea, .code-editor pre {
+  font-family: 'Menlo', 'Monaco', 'Courier New', monospace !important;
+  font-size: 14px !important;
+  line-height: 1.5 !important;
 }
 
 .sidebar {
@@ -174,6 +208,7 @@ body {
   margin-top: 20px;
   display: flex;
   justify-content: flex-start;
+  flex-wrap: wrap;
 }
 
 .language-selector button {
@@ -183,6 +218,7 @@ body {
   padding: 10px 15px;
   cursor: pointer;
   margin-right: 10px;
+  margin-bottom: 10px;
   transition: background-color 0.2s, color 0.2s;
 }
 
