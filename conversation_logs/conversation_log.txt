@@ -35,3 +35,7 @@
 
 [2025-11-22 16:15:31] TTS Output: Generated audio: response_chunk_0.mp3 (132956 bytes)
 
+[2025-11-22 16:29:00] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 16:29:01] TTS Output: Generated audio: response_chunk_0.mp3 (124596 bytes)
+

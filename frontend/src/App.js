@@ -9,31 +9,218 @@ import './App.css';
 const questions = [
   {
     id: 1,
-    title: '1. Two Sum',
-    description: 'Given an array of integers `nums` and an integer `target`, return *indices of the two numbers such that they add up to `target`*.',
-    details: 'You may assume that each input would have **exactly one solution**, and you may not use the *same* element twice. You can return the answer in any order.',
+    title: 'Two Sum',
+    type: 'Array',
+    description: 'Find two numbers that add up to a specific target',
+    difficulty: 'Easy',
+    details: 'Given an array of integers `nums` and an integer `target`, return *indices of the two numbers such that they add up to `target`*.',
     examples: [
       {
         input: 'nums = [2,7,11,15], target = 9',
         output: '[0,1]',
         explanation: 'Because nums[0] + nums[1] == 9, we return [0, 1].',
       },
-      {
-        input: 'nums = [3,2,4], target = 6',
-        output: '[1,2]',
-      },
     ],
   },
   {
     id: 2,
-    title: '2. Add Two Numbers',
-    description: 'You are given two non-empty linked lists representing two non-negative integers. The digits are stored in reverse order, and each of their nodes contains a single digit. Add the two numbers and return the sum as a linked list.',
-    details: 'You may assume the two numbers do not contain any leading zero, except the number 0 itself.',
+    title: 'Add Two Numbers',
+    type: 'Linked List',
+    description: 'Add two numbers represented as linked lists',
+    difficulty: 'Medium',
+    details: 'You are given two non-empty linked lists representing two non-negative integers. The digits are stored in reverse order, and each of their nodes contains a single digit. Add the two numbers and return the sum as a linked list.',
     examples: [
       {
         input: 'l1 = [2,4,3], l2 = [5,6,4]',
         output: '[7,0,8]',
         explanation: '342 + 465 = 807.',
+      },
+    ],
+  },
+  {
+    id: 3,
+    title: 'Longest Substring Without Repeating Characters',
+    type: 'String',
+    description: 'Find the length of the longest substring without repeating characters',
+    difficulty: 'Medium',
+    details: 'Given a string s, find the length of the longest substring without repeating characters.',
+    examples: [
+      {
+        input: 's = "abcabcbb"',
+        output: '3',
+        explanation: 'The answer is "abc", with the length of 3.',
+      },
+    ],
+  },
+  {
+    id: 4,
+    title: 'Median of Two Sorted Arrays',
+    type: 'Array',
+    description: 'Find the median of two sorted arrays',
+    difficulty: 'Hard',
+    details: 'Given two sorted arrays nums1 and nums2 of size m and n respectively, return the median of the two sorted arrays.',
+    examples: [
+      {
+        input: 'nums1 = [1,3], nums2 = [2]',
+        output: '2.0',
+        explanation: 'Merged array = [1,2,3] and median is 2.',
+      },
+    ],
+  },
+  {
+    id: 5,
+    title: 'Valid Parentheses',
+    type: 'Stack',
+    description: 'Check if a string has valid parentheses',
+    difficulty: 'Easy',
+    details: 'Given a string s containing just the characters "(", ")", "{", "}", "[" and "]", determine if the input string is valid.',
+    examples: [
+      {
+        input: 's = "()[]{}"',
+        output: 'true',
+      },
+    ],
+  },
+  {
+    id: 6,
+    title: 'Merge k Sorted Lists',
+    type: 'Linked List',
+    description: 'Merge k sorted linked lists into one sorted list',
+    difficulty: 'Hard',
+    details: 'You are given an array of k linked-lists lists, each linked-list is sorted in ascending order. Merge all the linked-lists into one sorted linked-list and return it.',
+    examples: [
+      {
+        input: 'lists = [[1,4,5],[1,3,4],[2,6]]',
+        output: '[1,1,2,3,4,4,5,6]',
+      },
+    ],
+  },
+  {
+    id: 7,
+    title: 'Container With Most Water',
+    type: 'Array',
+    description: 'Find two lines that together contain the most water',
+    difficulty: 'Medium',
+    details: 'Given n non-negative integers a1, a2, ..., an, where each represents a point at coordinate (i, ai). n vertical lines are drawn such that the two endpoints of the line i is at (i, ai) and (i, 0). Find two lines, which, together with the x-axis forms a container, such that the container contains the most water.',
+    examples: [
+      {
+        input: 'height = [1,8,6,2,5,4,8,3,7]',
+        output: '49',
+      },
+    ],
+  },
+  {
+    id: 8,
+    title: 'Longest Palindromic Substring',
+    type: 'String',
+    description: 'Find the longest palindromic substring in a string',
+    difficulty: 'Medium',
+    details: 'Given a string s, return the longest palindromic substring in s.',
+    examples: [
+      {
+        input: 's = "babad"',
+        output: '"bab"',
+        explanation: '"aba" is also a valid answer.',
+      },
+    ],
+  },
+  {
+    id: 9,
+    title: '3Sum',
+    type: 'Array',
+    description: 'Find all unique triplets that sum to zero',
+    difficulty: 'Medium',
+    details: 'Given an integer array nums, return all the triplets [nums[i], nums[j], nums[k]] such that i != j, i != k, and j != k, and nums[i] + nums[j] + nums[k] == 0.',
+    examples: [
+      {
+        input: 'nums = [-1,0,1,2,-1,-4]',
+        output: '[[-1,-1,2],[-1,0,1]]',
+      },
+    ],
+  },
+  {
+    id: 10,
+    title: 'Merge Intervals',
+    type: 'Array',
+    description: 'Merge overlapping intervals',
+    difficulty: 'Medium',
+    details: 'Given an array of intervals where intervals[i] = [starti, endi], merge all overlapping intervals, and return an array of the non-overlapping intervals that cover all the intervals in the input.',
+    examples: [
+      {
+        input: 'intervals = [[1,3],[2,6],[8,10],[15,18]]',
+        output: '[[1,6],[8,10],[15,18]]',
+      },
+    ],
+  },
+  {
+    id: 11,
+    title: 'Group Anagrams',
+    type: 'Hash Table',
+    description: 'Group anagrams together from a list of strings',
+    difficulty: 'Medium',
+    details: 'Given an array of strings strs, group the anagrams together. You can return the answer in any order.',
+    examples: [
+      {
+        input: 'strs = ["eat","tea","tan","ate","nat","bat"]',
+        output: '[["bat"],["nat","tan"],["ate","eat","tea"]]',
+      },
+    ],
+  },
+  {
+    id: 12,
+    title: 'Maximum Subarray',
+    type: 'Array',
+    description: 'Find the contiguous subarray with the largest sum',
+    difficulty: 'Easy',
+    details: 'Given an integer array nums, find the contiguous subarray (containing at least one number) which has the largest sum and return its sum.',
+    examples: [
+      {
+        input: 'nums = [-2,1,-3,4,-1,2,1,-5,4]',
+        output: '6',
+        explanation: '[4,-1,2,1] has the largest sum = 6.',
+      },
+    ],
+  },
+  {
+    id: 13,
+    title: 'Word Search',
+    type: 'Backtracking',
+    description: 'Search for a word in a 2D grid of characters',
+    difficulty: 'Medium',
+    details: 'Given an m x n grid of characters board and a string word, return true if word exists in the grid.',
+    examples: [
+      {
+        input: 'board = [["A","B","C","E"],["S","F","C","S"],["A","D","E","E"]], word = "ABCCED"',
+        output: 'true',
+      },
+    ],
+  },
+  {
+    id: 14,
+    title: 'Best Time to Buy and Sell Stock',
+    type: 'Array',
+    description: 'Find the maximum profit from buying and selling a stock',
+    difficulty: 'Easy',
+    details: 'You are given an array prices where prices[i] is the price of a given stock on the ith day. You want to maximize your profit by choosing a single day to buy one stock and choosing a different day in the future to sell that stock.',
+    examples: [
+      {
+        input: 'prices = [7,1,5,3,6,4]',
+        output: '5',
+        explanation: 'Buy on day 2 (price = 1) and sell on day 5 (price = 6), profit = 6-1 = 5.',
+      },
+    ],
+  },
+  {
+    id: 15,
+    title: 'LRU Cache',
+    type: 'Design',
+    description: 'Design a Least Recently Used (LRU) cache',
+    difficulty: 'Hard',
+    details: 'Design a data structure that follows the constraints of a Least Recently Used (LRU) cache. Implement the LRUCache class.',
+    examples: [
+      {
+        input: '["LRUCache", "put", "put", "get", "put", "get", "put", "get", "get", "get"]\n[[2], [1, 1], [2, 2], [1], [3, 3], [2], [4, 4], [1], [3], [4]]',
+        output: '[null, null, null, 1, null, -1, null, -1, 3, 4]',
       },
     ],
   },
@@ -65,21 +252,11 @@ function App() {
     }
   };
 
-  // Add navigation to voice chat
-  const goToVoiceChat = () => {
-    navigate('/voice-chat');
-  };
-
   return (
     <div className="App">
       {currentView === 'login' && <Login onLogin={handleLogin} />}
       {currentView === 'questionSelector' && (
-        <>
-          <button onClick={goToVoiceChat} className="voice-chat-button">
-            🎤 Voice Chat
-          </button>
-          <QuestionSelector onQuestionSelect={handleQuestionSelect} />
-        </>
+        <QuestionSelector onQuestionSelect={handleQuestionSelect} />
       )}
       {currentView === 'interview' && (
         <Interview 
@@ -108,16 +285,109 @@ function Login({ onLogin }) {
 }
 
 function QuestionSelector({ onQuestionSelect }) {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  
+  // Get all unique question types for the filter dropdown
+  const questionTypes = [...new Set(questions.map(q => q.type))];
+  
+  // Filter questions based on search term and category
+  const filteredQuestions = questions.filter(question => {
+    const matchesSearch = question.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         question.description.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesCategory = categoryFilter === 'all' || 
+                          question.type.toLowerCase() === categoryFilter.toLowerCase();
+    
+    return matchesSearch && matchesCategory;
+  });
+  
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+  };
+  
+  const handleCategoryChange = (e) => {
+    setCategoryFilter(e.target.value);
+  };
+  
+  const getDifficultyColor = (difficulty) => {
+    switch(difficulty.toLowerCase()) {
+      case 'easy': return '#4CAF50';
+      case 'medium': return '#FFC107';
+      case 'hard': return '#F44336';
+      default: return '#9E9E9E';
+    }
+  };
+
   return (
     <div className="question-selector-container">
-      <h2>Select a Question</h2>
-      <div className="question-list">
-        {questions.map(q => (
-          <div key={q.id} className="question-item" onClick={() => onQuestionSelect(q)}>
-            <h3>{q.title}</h3>
-            <p>{q.description}</p>
+      <div className="question-header">
+        <h2>Interview Questions</h2>
+        <div className="question-filters">
+          <input 
+            type="text" 
+            placeholder="Search questions..." 
+            className="search-input"
+            value={searchTerm}
+            onChange={handleSearchChange}
+          />
+          <select 
+            className="filter-select"
+            value={categoryFilter}
+            onChange={handleCategoryChange}
+          >
+            <option value="all">All Categories</option>
+            {questionTypes.map(type => (
+              <option key={type} value={type.toLowerCase()}>
+                {type}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+      
+      <div className="questions-table">
+        <div className="table-header">
+          <div className="table-row">
+            <div className="table-cell">Title</div>
+            <div className="table-cell">Type</div>
+            <div className="table-cell">Description</div>
+            <div className="table-cell">Difficulty</div>
           </div>
-        ))}
+        </div>
+        <div className="table-body">
+          {filteredQuestions.length > 0 ? (
+            filteredQuestions.map((q) => (
+            <div 
+              key={q.id} 
+              className="table-row clickable"
+              onClick={() => onQuestionSelect(q)}
+            >
+              <div className="table-cell title-cell">
+                <span className="question-number">{q.id}.</span> {q.title}
+              </div>
+              <div className="table-cell">
+                <span className="type-tag">{q.type}</span>
+              </div>
+              <div className="table-cell description-cell">
+                {q.description}
+              </div>
+              <div className="table-cell">
+                <span 
+                  className="difficulty-tag"
+                  style={{ backgroundColor: getDifficultyColor(q.difficulty) }}
+                >
+                  {q.difficulty}
+                </span>
+              </div>
+            </div>
+            ))
+          ) : (
+            <div className="no-results">
+              No questions found matching your criteria.
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
