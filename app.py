@@ -120,69 +120,74 @@ def speech_to_text(audio_path):
         traceback.print_exc()
         return ""
 
-def run_gemini(text):
-    """Process text with Gemini"""
+def run_gemini(prompt):
+    """Generate text using Gemini API"""
+    if not prompt or not prompt.strip():
+        print("Error: Empty prompt provided for Gemini")
+        return None
+        
+    # List of models to try in order of preference
+    models_to_try = [
+        "gemini-2.0-flash",  # Fallback to 2.0 if needed
+        "gemini-2.0-pro"     # Last resort
+    ]
+    
+    # First, list all available models to help with debugging
     try:
-        # List available models for debugging
+        available_models = [model.name for model in genai.list_models()]
+        print("Available models:", available_models)
+        
+        # Filter to only include text generation models that support generateContent
+        text_models = [m for m in available_models if 'generateContent' in m.supported_generation_methods]
+        print(f"Available text generation models: {text_models}")
+        
+        # If we found any text generation models, use those instead
+        if text_models:
+            models_to_try = [m.split('/')[-1] for m in text_models if 'gemini' in m.lower()]
+            print(f"Using available Gemini models: {models_to_try}")
+            
+    except Exception as e:
+        print(f"Error listing models: {str(e)}")
+        print("Will proceed with default model list")
+        
+    last_error = None
+    
+    for model_name in models_to_try:
+        full_model_name = f"models/{model_name}"
         try:
-            models = genai.list_models()
-            print("Available models:", [m.name for m in models])
-        except Exception as e:
-            print(f"Warning: Could not list models: {str(e)}")
-        
-        # Try different model names
-        model_names = [
-            'gemini-1.5-pro',
-            'gemini-pro',
-            'gemini-1.0-pro-002',
-            'gemini-1.0-pro'
-        ]
-        
-        last_error = None
-        
-        for model_name in model_names:
-            try:
-                print(f"Trying model: {model_name}")
-                model = genai.GenerativeModel(model_name)
-                
-                # Generate content with the correct parameters
-                response = model.generate_content(
-                    f"You are a helpful AI assistant. The user said: {text}",
-                    generation_config={
-                        "temperature": 0.7,
-                        "max_output_tokens": 200,
-                    },
-                )
-                
-                if hasattr(response, 'text'):
-                    return response.text
-                elif hasattr(response, 'candidates') and response.candidates:
-                    return response.candidates[0].content.parts[0].text
-                else:
-                    print(f"Unexpected response format from model {model_name}")
-                    continue
-                    
-            except Exception as e:
-                last_error = str(e)
-                print(f"Error with model {model_name}: {last_error}")
+            print(f"Trying model: {full_model_name}")
+            model = genai.GenerativeModel(full_model_name)
+            
+            # Generate content with the correct parameters
+            response = model.generate_content(
+                f"You are a helpful AI assistant. The user said: {prompt}",
+                generation_config={
+                    "temperature": 0.7,
+                    "max_output_tokens": 200,
+                },
+            )
+            
+            if hasattr(response, 'text'):
+                return response.text
+            elif hasattr(response, 'candidates') and response.candidates:
+                return response.candidates[0].content.parts[0].text
+            else:
+                print(f"Unexpected response format from model {full_model_name}")
                 continue
-        
-        # If we get here, all models failed
-        error_msg = f"All models failed. Last error: {last_error}"
-        print(error_msg)
-        return "I'm sorry, I'm having trouble processing your request right now. Please try again later."
-        
-    except Exception as e:
-        error_msg = f"Unexpected error in run_gemini: {str(e)}"
-        print(error_msg)
-        import traceback
-        traceback.print_exc()
-        return "I'm sorry, I encountered an unexpected error."
-    except Exception as e:
-        print(f"Error in run_gemini: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        return "I encountered an error processing your request."
+                
+        except Exception as e:
+            last_error = str(e)
+            print(f"Error with model {full_model_name}: {last_error}")
+            if "not found" in str(e).lower() or "not supported" in str(e).lower():
+                print(f"Model {full_model_name} not found or not supported, trying next...")
+                continue
+            print(f"Error details: {str(e)}")
+            continue
+    
+    # If we get here, all models failed
+    error_msg = f"All models failed. Last error: {last_error}"
+    print(error_msg)
+    return "I'm sorry, I'm having trouble processing your request right now. Please try again later."
 
 def text_to_speech(text):
     """Convert text to speech using ElevenLabs API"""
