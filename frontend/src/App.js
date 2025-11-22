@@ -1,14 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import Editor from 'react-simple-code-editor';
-import { highlight, languages } from 'prismjs/components/prism-core';
-import 'prismjs/components/prism-clike';
-import 'prismjs/components/prism-javascript';
-import 'prismjs/components/prism-python';
-import 'prismjs/components/prism-java';
-import 'prismjs/components/prism-c';
-import 'prismjs/components/prism-cpp';
-import 'prismjs/components/prism-rust';
-import 'prismjs/themes/prism-tomorrow.css';
+import Editor from '@monaco-editor/react';
 import './App.css';
 
 const questions = [
@@ -177,8 +168,35 @@ function ProblemDescription({ question }) {
 
 function Interview({ question }) {
   const videoRef = useRef(null);
+  const wrapperRef = useRef(null);
   const [code, setCode] = useState('');
   const [selectedLanguage, setSelectedLanguage] = useState('python');
+  const [fontSize, setFontSize] = useState(20); // Default font size
+
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.metaKey || event.ctrlKey) {
+        if (event.key === '=') {
+          event.preventDefault();
+          setFontSize(size => size + 1);
+        } else if (event.key === '-') {
+          event.preventDefault();
+          setFontSize(size => Math.max(8, size - 1));
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (wrapperRef.current) {
+      wrapperRef.current.style.setProperty('--code-font-size', `${fontSize}px`);
+    }
+  }, [fontSize]);
 
   useEffect(() => {
     const getCamera = async () => {
@@ -199,21 +217,43 @@ function Interview({ question }) {
     setSelectedLanguage(language);
   };
 
+  const handleSave = async () => {
+    try {
+      const response = await fetch('http://127.0.0.1:5000/save-code', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ code }),
+      });
+
+      if (response.ok) {
+        console.log('Code saved successfully');
+      } else {
+        console.error('Failed to save code');
+      }
+    } catch (error) {
+      console.error('Error saving code:', error);
+    }
+  };
+
   return (
-    <div className="interview-wrapper">
+    <div className="interview-wrapper" ref={wrapperRef}>
       <Header />
       <div className="interview-container">
         <div className="main-content">
+          <div className="code-editor-header">
+            <button onClick={handleSave} className="save-button">Save</button>
+          </div>
           <Editor
+            height="100%"
+            language={selectedLanguage}
+            theme="vs-dark"
             value={code}
-            onValueChange={code => setCode(code)}
-            highlight={code => highlight(code, languages[selectedLanguage] || languages.clike)}
-            padding={20}
-            className="code-editor"
-            style={{
-              fontFamily: '"Menlo", "Monaco", "Courier New", monospace',
-              fontSize: 14,
-              lineHeight: 1.5,
+            onChange={setCode}
+            options={{
+              fontSize: fontSize,
+              bracketPairColorization: { enabled: true }
             }}
           />
         </div>
