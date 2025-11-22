@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ReactMic } from 'react-mic';
 import axios from 'axios';
 
@@ -6,6 +6,58 @@ const SimpleVoiceChat = ({ question }) => {
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [lastResponse, setLastResponse] = useState(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [audioContext, setAudioContext] = useState(null);
+  const [audioSource, setAudioSource] = useState(null);
+  const audioRef = useRef(null);
+
+  // Cleanup audio context on unmount
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+      if (audioContext) {
+        audioContext.close();
+      }
+      if (animationFrameId.current) {
+        cancelAnimationFrame(animationFrameId.current);
+      }
+    };
+  }, [audioContext]);
+
+  // Set up audio analysis when source changes
+  useEffect(() => {
+    if (!audioSource || !audioContext) return;
+
+    analyser.current = audioContext.createAnalyser();
+    analyser.current.fftSize = 64;
+    audioSource.connect(analyser.current);
+    analyser.current.connect(audioContext.destination);
+    
+    const bufferLength = analyser.current.frequencyBinCount;
+    dataArray.current = new Uint8Array(bufferLength);
+
+    const updateVisualizer = () => {
+      if (!analyser.current) return;
+      
+      analyser.current.getByteFrequencyData(dataArray.current);
+      setAudioData(new Uint8Array(dataArray.current));
+      animationFrameId.current = requestAnimationFrame(updateVisualizer);
+    };
+    
+    animationFrameId.current = requestAnimationFrame(updateVisualizer);
+    
+    return () => {
+      if (animationFrameId.current) {
+        cancelAnimationFrame(animationFrameId.current);
+      }
+      if (analyser.current) {
+        analyser.current.disconnect();
+      }
+    };
+  }, [audioSource, audioContext]);
 
   const startRecording = () => {
     console.log('Start recording button clicked');
@@ -28,9 +80,14 @@ const SimpleVoiceChat = ({ question }) => {
     }
   };
   
+  const [audioData, setAudioData] = useState(new Uint8Array(0));
+  const animationFrameId = useRef();
+  const analyser = useRef();
+  const dataArray = useRef();
+
   // Handle audio data during recording
   const onData = (recordedData) => {
-    // You can use this for real-time visualization if needed
+    // Not used for visualization anymore
     console.log('Audio data received:', recordedData);
   };
 
@@ -168,14 +225,66 @@ const SimpleVoiceChat = ({ question }) => {
         console.log('Received response from server');
         // Create URL for the AI's audio response and play it
         const audioUrl = URL.createObjectURL(response.data);
-        console.log('Created audio URL:', audioUrl);
         
-        const audio = new Audio(audioUrl);
-        console.log('Playing audio...');
-        audio.play()
-          .then(() => console.log('Audio playback started'))
-          .catch(e => console.error('Error playing audio:', e));
+        // Handle audio playback with visualization
+        const playAudio = async (audioData) => {
+          if (!audioData) return;
           
+          try {
+            // Create audio context if it doesn't exist
+            let context = audioContext;
+            if (!context) {
+              const AudioContext = window.AudioContext || window.webkitAudioContext;
+              context = new AudioContext();
+              setAudioContext(context);
+            }
+            
+            // Stop any currently playing audio
+            if (audioRef.current) {
+              audioRef.current.pause();
+              audioRef.current = null;
+            }
+            
+            const audioBlob = new Blob([audioData], { type: 'audio/mp3' });
+            const audioUrl = URL.createObjectURL(audioBlob);
+            const audio = new Audio(audioUrl);
+            audioRef.current = audio;
+            
+            // When audio starts playing
+            const onPlay = async () => {
+              if (!context) return;
+              
+              // Create a new audio source node
+              const source = context.createMediaElementSource(audio);
+              setAudioSource(source);
+              
+              // Connect to destination (for sound) and update state
+              source.connect(context.destination);
+              setIsPlaying(true);
+            };
+            
+            // When audio ends
+            const onEnded = () => {
+              setIsPlaying(false);
+              setAudioSource(null);
+              audio.removeEventListener('play', onPlay);
+              audio.removeEventListener('ended', onEnded);
+            };
+            
+            audio.addEventListener('play', onPlay);
+            audio.addEventListener('ended', onEnded);
+            
+            // Start playback
+            await audio.play();
+            
+          } catch (error) {
+            console.error('Error playing audio:', error);
+            setIsPlaying(false);
+          }
+        };
+        
+        await playAudio(response.data);
+        
         setLastResponse(audioUrl);
         return response;
       } finally {
@@ -259,31 +368,101 @@ const SimpleVoiceChat = ({ question }) => {
   };
 
   return (
-    <div className="simple-voice-chat">
-      <div className="voice-controls">
+    <div className="voice-chat-container">
+      {/* Wave Visualizer */}
+      {isPlaying && (
+        <div style={{
+          position: 'fixed',
+          bottom: '112px',
+          left: '32px',
+          width: '64px',
+          height: '40px',
+          borderRadius: '20px',
+          backgroundColor: 'rgba(32, 33, 36, 0.8)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-evenly',
+          padding: '0 10px',
+          zIndex: 999
+        }}>
+          {Array.from(audioData).slice(0, 4).map((value, index) => {
+            const height = Math.max(4, (value / 255) * 20);
+            return (
+              <div 
+                key={index}
+                style={{
+                  width: '6px',
+                  height: `${height}px`,
+                  backgroundColor: '#34a853',
+                  borderRadius: '3px',
+                  transition: 'height 0.1s ease-out',
+                  animation: 'pulse 0.5s infinite alternate',
+                  animationDelay: `${index * 0.1}s`,
+                  animationPlayState: isPlaying ? 'running' : 'paused'
+                }}
+              />
+            );
+          })}
+        </div>
+      )}
+      
+      <div style={{
+        position: 'fixed',
+        bottom: '32px',
+        left: '32px',
+        zIndex: 9999
+      }}>
         <button
+          className={`submit-button ${isRecording ? 'recording' : ''}`}
           onClick={isRecording ? stopRecording : startRecording}
-          disabled={isProcessing}
+          disabled={isProcessing || isPlaying}
           style={{
-            ...buttonStyles.base,
-            ...(isRecording ? buttonStyles.danger : buttonStyles.primary),
-            ...(isProcessing && { opacity: 0.7, cursor: 'not-allowed' })
+            opacity: (isProcessing || isPlaying) ? 0.6 : 1,
+            cursor: (isProcessing || isPlaying) ? 'not-allowed' : 'pointer',
+            width: '64px',
+            height: '64px',
+            borderRadius: '50%',
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            backgroundColor: isRecording ? 'rgba(255, 59, 48, 0.15)' : 'rgba(0, 122, 255, 0.15)',
+            color: isRecording ? 'rgba(255, 59, 48, 0.95)' : 'rgba(0, 122, 255, 0.95)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 0,
+            position: 'relative',
+            backdropFilter: 'blur(12px) saturate(180%)',
+            WebkitBackdropFilter: 'blur(12px) saturate(180%)',
+            boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.18)',
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            ':hover:not(:disabled)': {
+              transform: 'scale(1.05)'
+            },
+            ':active:not(:disabled)': {
+              transform: 'scale(0.95)'
+            }
           }}
         >
           {isProcessing ? (
-            <span className="spinner"></span>
+            <div className="spinner" style={{
+              width: '24px',
+              height: '24px',
+              border: '3px solid rgba(255, 255, 255, 0.3)',
+              borderRadius: '50%',
+              borderTopColor: 'currentColor',
+              animation: 'spin 1s ease-in-out infinite'
+            }}></div>
           ) : isRecording ? (
-            <>
-              <span className="recording-dot"></span>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect x="6" y="5" width="4" height="14" rx="1" fill="currentColor"/>
-                <rect x="14" y="5" width="4" height="14" rx="1" fill="currentColor"/>
-              </svg>
-            </>
+            <div style={{
+              width: '24px',
+              height: '24px',
+              backgroundColor: 'currentColor',
+              borderRadius: '4px'
+            }}></div>
           ) : (
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 15C13.6569 15 15 13.6569 15 12V6C15 4.34315 13.6569 3 12 3C10.3431 3 9 4.34315 9 6V12C9 13.6569 10.3431 15 12 15Z" fill="currentColor"/>
-              <path d="M17 12C17 14.7614 14.7614 17 12 17C9.23858 17 7 14.7614 7 12H5C5 15.866 8.13401 19 12 19C15.866 19 19 15.866 19 12H17Z" fill="currentColor"/>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 14C13.66 14 14.99 12.66 14.99 11L15 5C15 3.34 13.66 2 12 2C10.34 2 9 3.34 9 5V11C9 12.66 10.34 14 12 14Z" />
+              <path d="M17 11C17 14.31 14.31 17 11 17C7.69 17 5 14.31 5 11H3C3 15.42 6.58 19 11 19C15.42 19 19 15.42 19 11H17Z" />
             </svg>
           )}
         </button>
@@ -310,72 +489,15 @@ const SimpleVoiceChat = ({ question }) => {
         visualSetting="sinewave"
       />
 
-      <style jsx>{`
-        .simple-voice-chat {
-          position: fixed;
-          bottom: 24px;
-          left: 24px;
-          z-index: 1000;
-          margin: 0;
-          padding: 0;
-          background: transparent;
-          border: none;
-          width: auto;
-          min-width: 0;
-        }
-        
-        .voice-controls {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 0;
-          margin: 0;
-        }
-        
+      <style jsx global>{`
         @keyframes spin {
           to { transform: rotate(360deg); }
         }
         
         @keyframes pulse {
-          0% {
-            opacity: 1;
-            box-shadow: 0 0 0 0 rgba(255, 69, 58, 0.7);
-          }
-          70% {
-            opacity: 0.8;
-            box-shadow: 0 0 0 10px rgba(255, 69, 58, 0);
-          }
-          100% {
-            opacity: 1;
-            box-shadow: 0 0 0 0 rgba(255, 69, 58, 0);
-          }
-        }
-        
-        .spinner {
-          display: block;
-          width: 28px;
-          height: 28px;
-          border: 2.5px solid rgba(255, 255, 255, 0.2);
-          border-radius: 50%;
-          border-top-color: rgba(255, 255, 255, 0.9);
-          animation: spin 0.8s cubic-bezier(0.5, 0, 0.5, 1) infinite;
-        }
-        
-        .recording-dot {
-          position: absolute;
-          top: 4px;
-          right: 4px;
-          width: 10px;
-          height: 10px;
-          background-color: #ff453a;
-          border: 2px solid rgba(29, 29, 31, 0.8);
-          border-radius: 50%;
-          animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-          box-shadow: 0 0 0 0 rgba(255, 69, 58, 0.7);
-        }
-        
-        .sound-wave {
-          display: none; /* Hide the visualizer */
+          0% { transform: scale(1); }
+          50% { transform: scale(1.1); }
+          100% { transform: scale(1); }
         }
       `}</style>
     </div>
