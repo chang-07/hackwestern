@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react
 import Editor from '@monaco-editor/react';
 import VoiceChat from './components/VoiceChat';
 import SimpleVoiceChat from './components/SimpleVoiceChat';
+import ReactMarkdown from 'react-markdown';
 import './App.css';
 
 const questions = [
@@ -147,12 +148,6 @@ function LanguageSelector({ selectedLanguage, onLanguageSelect }) {
       >
         JavaScript
       </button>
-      <button
-        className={selectedLanguage === 'rust' ? 'selected' : ''}
-        onClick={() => onLanguageSelect('rust')}
-      >
-        Rust
-      </button>
     </div>
   );
 }
@@ -178,6 +173,11 @@ function ProblemDescription({ question }) {
 }
 
 function InterviewReview({ analysis }) {
+  // Remove the markdown code block markers if they exist
+  const cleanAnalysis = analysis ? 
+    analysis.replace(/^```markdown\n|```$/g, '') : 
+    'No analysis available';
+    
   return (
     <div className="interview-review-container">
       <Header />
@@ -185,7 +185,9 @@ function InterviewReview({ analysis }) {
         <h2>Interview Review</h2>
         <div className="analysis-section">
           <h3>Code Analysis</h3>
-          <pre>{analysis}</pre>
+          <div className="markdown-content">
+            <ReactMarkdown>{cleanAnalysis}</ReactMarkdown>
+          </div>
         </div>
       </div>
     </div>
@@ -200,6 +202,17 @@ function Interview({ question, onInterviewFinish }) {
   const [selectedLanguage, setSelectedLanguage] = useState('python');
   const [fontSize, setFontSize] = useState(20); // Default font size
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Audio recording state
+  const [isRecording, setIsRecording] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [audioData, setAudioData] = useState(new Uint8Array(0));
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const audioContextRef = useRef(null);
+  const analyserRef = useRef(null);
+  const animationFrameId = useRef(null);
 
   useEffect(() => {
     const handleKeyDown = (event) => {
@@ -244,11 +257,226 @@ function Interview({ question, onInterviewFinish }) {
   const handleLanguageSelect = (language) => {
     setSelectedLanguage(language);
   };
+  
+  // Initialize audio context and analyser
+  const initAudioContext = async () => {
+    try {
+      audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
+      analyserRef.current = audioContextRef.current.createAnalyser();
+      analyserRef.current.fftSize = 64; // Smaller FFT size for smoother visualization
+      
+      // Start the visualization loop
+      const visualize = () => {
+        if (!analyserRef.current) return;
+        
+        const bufferLength = analyserRef.current.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+        
+        if (isPlaying || isRecording) {
+          analyserRef.current.getByteFrequencyData(dataArray);
+          // Only update state if there's actual audio data
+          if (dataArray.some(level => level > 0)) {
+            setAudioData([...dataArray]); // Create a new array to trigger re-render
+          }
+          animationFrameId.current = requestAnimationFrame(visualize);
+        }
+      };
+      
+      // Start the visualization loop
+      animationFrameId.current = requestAnimationFrame(visualize);
+    } catch (err) {
+      console.error('Error initializing audio context:', err);
+    }
+  };
+  
+  // Set up audio context on mount and clean up on unmount
+  useEffect(() => {
+    initAudioContext();
+    
+    // Cleanup function
+    return () => {
+      if (animationFrameId.current) {
+        cancelAnimationFrame(animationFrameId.current);
+        animationFrameId.current = null;
+      }
+      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+        audioContextRef.current.close();
+      }
+    };
+  }, [isPlaying, isRecording]); // Re-run when recording/playback state changes
+  
+  // Start recording audio
+  const startRecording = async () => {
+    try {
+      audioChunksRef.current = [];
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          sampleRate: 16000
+        } 
+      });
+      
+      // Set up media recorder with specific MIME type
+      const options = {
+        mimeType: 'audio/webm;codecs=opus',
+        audioBitsPerSecond: 128000
+      };
+      
+      // Check if the MIME type is supported
+      let mediaRecorder;
+      if (MediaRecorder.isTypeSupported(options.mimeType)) {
+        mediaRecorder = new MediaRecorder(stream, options);
+        console.log(`Using MIME type: ${options.mimeType}`);
+      } else {
+        console.warn(`MIME type ${options.mimeType} not supported, using default`);
+        mediaRecorder = new MediaRecorder(stream);
+      }
+      
+      mediaRecorderRef.current = mediaRecorder;
+      
+      // Set up audio processing
+      if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
+        await audioContextRef.current.resume();
+      }
+      
+      // Create a new analyser for the recording stream
+      const source = audioContextRef.current.createMediaStreamSource(stream);
+      analyserRef.current = audioContextRef.current.createAnalyser();
+      analyserRef.current.fftSize = 64;
+      source.connect(analyserRef.current);
+      
+      // Start the visualization
+      if (animationFrameId.current) {
+        cancelAnimationFrame(animationFrameId.current);
+      }
+      
+      const visualize = () => {
+        if (!analyserRef.current) return;
+        
+        const bufferLength = analyserRef.current.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+        analyserRef.current.getByteFrequencyData(dataArray);
+        
+        // Update the visualizer with new data
+        setAudioData([...dataArray]);
+        
+        // Continue the animation loop
+        animationFrameId.current = requestAnimationFrame(visualize);
+      };
+      
+      // Start the visualization loop
+      animationFrameId.current = requestAnimationFrame(visualize);
+      
+      // Handle data available event
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          console.log(`Collected audio chunk: ${event.data.size} bytes`);
+          audioChunksRef.current.push(event.data);
+        }
+      };
+      
+      mediaRecorder.start(100); // Request data every 100ms
+      console.log('Recording started with MIME type:', mediaRecorder.mimeType);
+      setIsRecording(true);
+      setIsPlaying(false);
+      
+    } catch (err) {
+      console.error('Error starting recording:', err);
+      alert('Could not access microphone. Please ensure you have granted microphone permissions.');
+    }
+  };
+  
+  // Function to send audio to backend for processing
+  const sendToElevenLabs = async (audioBlob) => {
+    try {
+      const formData = new FormData();
+      formData.append('audio', audioBlob, 'recording.webm');
+      
+      // Show loading state
+      setIsProcessing(true);
+      
+      // Send to backend
+      const response = await fetch('http://localhost:5008/process_audio', {
+        method: 'POST',
+        body: formData,
+        // Don't set Content-Type header, let the browser set it with the correct boundary
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to process audio');
+      }
+      
+      // Get the audio response as a blob
+      const audioData = await response.blob();
+      
+      if (audioData.size === 0) {
+        throw new Error('Received empty audio response');
+      }
+      
+      // Create a URL for the audio blob
+      const audioUrl = URL.createObjectURL(audioData);
+      const audio = new Audio(audioUrl);
+      
+      // Set up event handlers
+      audio.onended = () => {
+        console.log('Playback finished');
+        setIsPlaying(false);
+      };
+      
+      audio.onerror = (e) => {
+        console.error('Audio playback error:', e);
+        setIsPlaying(false);
+      };
+      
+      console.log('Starting playback...');
+      setIsPlaying(true);
+      await audio.play().catch(e => {
+        console.error('Error playing audio:', e);
+        setIsPlaying(false);
+        throw e;
+      });
+      
+    } catch (err) {
+      console.error('Error processing audio:', err);
+      alert(`Error: ${err.message || 'Failed to process audio'}`);
+      throw err; // Re-throw to be caught by the caller
+    } finally {
+      setIsProcessing(false);
+      setIsRecording(false);
+    }
+  };
+  
+  // Stop recording and process audio
+  const stopRecording = () => {
+    if (!mediaRecorderRef.current || mediaRecorderRef.current.state === 'inactive') return;
+    
+    mediaRecorderRef.current.stop();
+    mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+    
+    // Process the recorded audio
+    mediaRecorderRef.current.onstop = async () => {
+      try {
+        // Use the actual MIME type that the MediaRecorder was using
+        const mimeType = mediaRecorderRef.current.mimeType || 'audio/webm';
+        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+        console.log(`Sending audio to backend (${audioBlob.size} bytes, type: ${mimeType})`);
+        
+        // Send audio to backend for processing
+        await sendToElevenLabs(audioBlob);
+        
+      } catch (err) {
+        console.error('Error in recording processing:', err);
+        // Error is already handled in sendToElevenLabs
+      }
+    };
+  };
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
-      const response = await fetch('http://127.0.0.1:5000/save-code', {
+      const response = await fetch('http://127.0.0.1:5008/save-code', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -258,7 +486,7 @@ function Interview({ question, onInterviewFinish }) {
 
       if (response.ok) {
         console.log('Code saved successfully, starting analysis...');
-        const analysisResponse = await fetch('http://127.0.0.1:5000/analyze', {
+        const analysisResponse = await fetch('http://127.0.0.1:5008/analyze', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -295,29 +523,130 @@ function Interview({ question, onInterviewFinish }) {
       <Header />
       <div className="interview-container">
         <div className="main-content">
-          <div className="code-editor-header">
-            {/* Header content if needed */}
+          <div className="editor-container">
+            <div className="code-editor-header">
+              {/* Header content if needed */}
+            </div>
+            <Editor
+              height="100%"
+              language={selectedLanguage}
+              theme="vs-dark"
+              value={code}
+              onChange={setCode}
+              options={{
+                fontSize: fontSize,
+                bracketPairColorization: { enabled: true },
+                scrollbar: {
+                  vertical: 'auto',
+                  horizontal: 'auto',
+                  verticalScrollbarSize: 10,
+                  horizontalScrollbarSize: 10
+                }
+              }}
+            />
           </div>
-          <Editor
-            height="100%"
-            language={selectedLanguage}
-            theme="vs-dark"
-            value={code}
-            onChange={setCode}
-            options={{
-              fontSize: fontSize,
-              bracketPairColorization: { enabled: true },
-              scrollbar: {
-                vertical: 'auto',
-                horizontal: 'auto',
-                verticalScrollbarSize: 10,
-                horizontalScrollbarSize: 10
-              }
-            }}
-          />
-          <div className="submit-button-container">
-            <button onClick={handleSubmit} className="submit-button" disabled={isSubmitting}>
-              <span className="submit-button-text">{isSubmitting ? '...' : '✓'}</span>
+          
+          {/* Visualizer and record button at the bottom of the editor */}
+          <div className="visualizer-container">
+            <div style={{ 
+              flex: 1, 
+              height: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              marginRight: '20px'
+            }}>
+              <SimpleVoiceChat isPlaying={isPlaying} />
+            </div>
+            
+            {/* Record button */}
+            <button 
+              onClick={isRecording ? stopRecording : startRecording}
+              disabled={isProcessing || isPlaying}
+              style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '50%',
+                border: 'none',
+                backgroundColor: isRecording ? 'rgba(255, 69, 58, 0.15)' : 'rgba(0, 122, 255, 0.15)',
+                color: isRecording ? '#ff453a' : 'rgba(0, 122, 255, 0.95)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: (isProcessing || isPlaying) ? 'not-allowed' : 'pointer',
+                opacity: (isProcessing || isPlaying) ? 0.6 : 1,
+                transition: 'all 0.3s ease',
+                animation: isRecording ? 'pulse 1.5s infinite' : 'none',
+                outline: 'none',
+                boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
+                flexShrink: 0
+              }}
+              title={isRecording ? 'Stop recording' : 'Start recording'}
+            >
+              {isProcessing ? (
+                <div className="spinner" style={{
+                  width: '20px',
+                  height: '20px',
+                  border: '2px solid rgba(255, 255, 255, 0.3)',
+                  borderRadius: '50%',
+                  borderTopColor: 'currentColor',
+                  animation: 'spin 1s linear infinite'
+                }} />
+              ) : isRecording ? (
+                <div style={{
+                  width: '16px',
+                  height: '16px',
+                  borderRadius: '4px',
+                  backgroundColor: 'currentColor'
+                }} />
+              ) : (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+                  <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+                </svg>
+              )}
+            </button>
+          </div>
+          
+          {/* Submit button in bottom right of code editor */}
+          <div style={{
+            position: 'absolute',
+            bottom: '90px',
+            right: '24px',
+            zIndex: 10
+          }}>
+            <button 
+              onClick={handleSubmit} 
+              disabled={isSubmitting}
+              style={{
+                width: '48px',
+                height: '48px',
+                borderRadius: '50%',
+                border: 'none',
+                backgroundColor: 'rgba(40, 167, 69, 0.2)',
+                color: 'rgba(40, 167, 69, 0.95)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                opacity: isSubmitting ? 0.7 : 1,
+                transition: 'all 0.3s ease',
+                outline: 'none',
+                boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
+                fontSize: '20px',
+                fontWeight: 'bold'
+              }}
+              title="Submit code"
+            >
+              {isSubmitting ? (
+                <div className="spinner" style={{
+                  width: '20px',
+                  height: '20px',
+                  border: '2px solid rgba(255, 255, 255, 0.3)',
+                  borderRadius: '50%',
+                  borderTopColor: 'currentColor',
+                  animation: 'spin 1s linear infinite'
+                }} />
+              ) : '✓'}
             </button>
           </div>
         </div>
@@ -325,7 +654,6 @@ function Interview({ question, onInterviewFinish }) {
           <video ref={videoRef} className="camera-view" autoPlay playsInline></video>
           <LanguageSelector selectedLanguage={selectedLanguage} onLanguageSelect={handleLanguageSelect} />
           <ProblemDescription question={question} />
-          <SimpleVoiceChat question={question} />
         </div>
       </div>
     </div>
