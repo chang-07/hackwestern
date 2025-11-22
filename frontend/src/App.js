@@ -1,14 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import Editor from 'react-simple-code-editor';
-import { highlight, languages } from 'prismjs/components/prism-core';
-import 'prismjs/components/prism-clike';
-import 'prismjs/components/prism-javascript';
-import 'prismjs/components/prism-python';
-import 'prismjs/components/prism-java';
-import 'prismjs/components/prism-c';
-import 'prismjs/components/prism-cpp';
-import 'prismjs/components/prism-rust';
-import 'prismjs/themes/prism-okaidia.css';
+import Editor from '@monaco-editor/react';
 import './App.css';
 
 const questions = [
@@ -226,20 +217,43 @@ function Interview({ question }) {
     setSelectedLanguage(language);
   };
 
+  const handleSave = async () => {
+    try {
+      const response = await fetch('http://127.0.0.1:5000/save-code', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ code }),
+      });
+
+      if (response.ok) {
+        console.log('Code saved successfully');
+      } else {
+        console.error('Failed to save code');
+      }
+    } catch (error) {
+      console.error('Error saving code:', error);
+    }
+  };
+
   return (
     <div className="interview-wrapper" ref={wrapperRef}>
       <Header />
       <div className="interview-container">
         <div className="main-content">
+          <div className="code-editor-header">
+            <button onClick={handleSave} className="save-button">Save</button>
+          </div>
           <Editor
+            height="100%"
+            language={selectedLanguage}
+            theme="vs-dark"
             value={code}
-            onValueChange={code => setCode(code)}
-            highlight={code => highlight(code, languages[selectedLanguage] || languages.clike)}
-            padding={20}
-            className="code-editor"
-            style={{
-              fontFamily: '"Menlo", "Monaco", "Courier New", monospace',
-              lineHeight: 1.5,
+            onChange={setCode}
+            options={{
+              fontSize: fontSize,
+              bracketPairColorization: { enabled: true }
             }}
           />
         </div>
