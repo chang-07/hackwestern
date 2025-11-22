@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from google import genai
+import google.generativeai as genai
 
 SUBMISSIONS_DIR = Path("submissions")
 CODE_FILE = SUBMISSIONS_DIR / "user_code.txt"
@@ -43,7 +43,9 @@ def save_code_to_file(code: str) -> Path:
     return CODE_FILE
 
 
-def detect_question_and_func(ns: dict) -> tuple[str | None, str | None]:
+from typing import Optional, Tuple
+
+def detect_question_and_func(ns: dict) -> Tuple[Optional[str], Optional[str]]:
     """
     Look at the executed namespace and infer which problem is being solved
     based on the function name.
