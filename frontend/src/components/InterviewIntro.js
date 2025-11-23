@@ -1,7 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
+import EmotionOverlay from './EmotionOverlay';
 import SimpleVoiceChat from './SimpleVoiceChat';
 
 const InterviewIntro = ({ question, onReady }) => {
+  const videoRef = useRef(null);
   const [transcript, setTranscript] = useState('');
   const [userName, setUserName] = useState('');
   const [isAskingName, setIsAskingName] = useState(true);
@@ -141,91 +143,109 @@ const InterviewIntro = ({ question, onReady }) => {
   };
 
   return (
-    <div className="interview-intro" style={{
-      display: 'flex',
-      flexDirection: 'column',
-      height: '100%',
-      padding: '20px',
-      backgroundColor: '#1e1e1e',
-      color: '#e0e0e0',
-      borderRadius: '4px',
-      position: 'relative'
-    }}>
-      {!voicesLoaded ? (
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          height: '100%',
-          textAlign: 'center',
-          padding: '20px'
-        }}>
-          <p>Loading voice synthesis... Please wait.</p>
-        </div>
-      ) : isAskingName ? (
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          height: '100%',
-          textAlign: 'center',
-          padding: '20px'
-        }}>
-          <p style={{ fontSize: '16px', marginBottom: '20px' }}>Please say your name when prompted...</p>
+    <div className="interview-intro" style={{ maxWidth: '800px', margin: '0 auto', padding: '20px' }}>
+      <div className="camera-container" style={{ 
+        width: '100%', 
+        maxWidth: '640px', 
+        margin: '0 auto 20px',
+        borderRadius: '8px',
+        overflow: 'hidden',
+        boxShadow: '0 4px 8px rgba(0,0,0,0.2)'
+      }}>
+        <EmotionOverlay />
+      </div>
+      
+      <div style={{
+        backgroundColor: '#1e1e1e',
+        color: '#e0e0e0',
+        borderRadius: '8px',
+        padding: '20px',
+        marginTop: '20px',
+        position: 'relative'
+      }}>
+        {!voicesLoaded ? (
           <div style={{
-            width: '40px',
-            height: '40px',
-            borderRadius: '50%',
-            backgroundColor: '#1890ff',
             display: 'flex',
+            flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            color: 'white',
-            fontSize: '20px',
-            animation: 'pulse 1.5s infinite',
-            marginBottom: '20px'
+            minHeight: '200px',
+            textAlign: 'center',
+            padding: '20px'
           }}>
-            🎤
+            <p>Loading voice synthesis... Please wait.</p>
           </div>
-          <SimpleVoiceChat onTranscript={handleTranscript} />
-        </div>
-      ) : (
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          height: '100%',
-          justifyContent: 'center',
-          textAlign: 'center',
-          padding: '20px'
-        }}>
-          <p style={{ fontSize: '16px', marginBottom: '20px' }}>
-            Hi {userName}! When you're ready, say "ready" to begin.
-          </p>
-          <SimpleVoiceChat onTranscript={handleTranscript} />
-        </div>
-      )}
+        ) : isAskingName ? (
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            minHeight: '200px',
+            textAlign: 'center',
+            padding: '20px'
+          }}>
+            <p style={{ fontSize: '16px', marginBottom: '20px' }}>Please say your name when prompted...</p>
+            <div style={{
+              width: '60px',
+              height: '60px',
+              borderRadius: '50%',
+              backgroundColor: '#1890ff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'white',
+              fontSize: '24px',
+              animation: 'pulse 1.5s infinite',
+              marginBottom: '20px'
+            }}>
+              🎤
+            </div>
+            <SimpleVoiceChat onTranscript={handleTranscript} />
+          </div>
+        ) : (
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            minHeight: '200px',
+            justifyContent: 'center',
+            textAlign: 'center',
+            padding: '20px'
+          }}>
+            <p style={{ fontSize: '18px', marginBottom: '20px' }}>
+              Hi {userName}! When you're ready, say "ready" to begin.
+            </p>
+            <SimpleVoiceChat onTranscript={handleTranscript} />
+          </div>
+        )}
+        
+        {transcript && (
+          <div style={{
+            position: 'absolute',
+            bottom: '20px',
+            left: '20px',
+            right: '20px',
+            padding: '10px',
+            backgroundColor: 'rgba(45, 45, 45, 0.9)',
+            borderRadius: '4px',
+            fontSize: '14px',
+            textAlign: 'left',
+            borderLeft: '3px solid #1890ff'
+          }}>
+            <span style={{ color: '#888' }}>You said: </span>
+            <span style={{ color: '#fff' }}>{transcript}</span>
+          </div>
+        )}
+      </div>
       
-      {transcript && (
-        <div style={{
-          position: 'absolute',
-          bottom: '20px',
-          left: '20px',
-          right: '20px',
-          padding: '10px',
-          backgroundColor: '#2d2d2d',
-          borderRadius: '4px',
-          fontSize: '14px',
-          textAlign: 'left',
-          borderLeft: '3px solid #1890ff'
-        }}>
-          <span style={{ color: '#888' }}>You said: </span>
-          <span style={{ color: '#fff' }}>{transcript}</span>
-        </div>
-      )}
-      
-      <style jsx>{"\n        @keyframes pulse {\n          0% { transform: scale(1); }\n          50% { transform: scale(1.1); }\n          100% { transform: scale(1); }\n        }\n      "}</style>
+      <style jsx>{`
+        @keyframes pulse {
+          0% { transform: scale(1); }
+          50% { transform: scale(1.1); }
+          100% { transform: scale(1); }
+        }
+      `}</style>
     </div>
   );
 };

@@ -1,5 +1,9 @@
 import google.generativeai as genai
 import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv('app.env')
 
 print("Checking available models...")
 try:

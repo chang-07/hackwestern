@@ -4,7 +4,7 @@ import Editor from '@monaco-editor/react';
 import VoiceChat from './components/VoiceChat';
 import SimpleVoiceChat from './components/SimpleVoiceChat';
 import ReactMarkdown from 'react-markdown';
-
+import EmotionStats from './components/EmotionStats';
 import './App.css';
 
 const questions = [
@@ -735,6 +735,7 @@ function App() {
   const [currentView, setCurrentView] = useState('login');
   const [selectedQuestion, setSelectedQuestion] = useState(null);
   const [analysisData, setAnalysisData] = useState(null);
+  const [emotionData, setEmotionData] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -742,6 +743,10 @@ function App() {
       stopAllAudio();
     }
   }, [currentView]);
+
+  const handleBackToProblems = () => {
+    setCurrentView('questionSelector');
+  };
 
   const handleLogin = () => {
     setCurrentView('questionSelector');
@@ -752,8 +757,9 @@ function App() {
     setCurrentView('interview');
   };
 
-  const handleInterviewFinish = (data) => {
+  const handleInterviewFinish = (data, emotionLogs = []) => {
     setAnalysisData(data);
+    setEmotionData(emotionLogs);
     setCurrentView('interviewReview');
   };
 
@@ -774,31 +780,13 @@ function App() {
           onBack={handleBack}
         />
       )}
-      {currentView === 'interviewReview' && <InterviewReview analysis={analysisData} onBack={handleBack}/>}
-    </div>
-  );
-}
-
-function ConfirmLeaveModal({ open, onConfirm, onCancel }) {
-  if (!open) return null;
-
-  return (
-    <div className="confirm-overlay">
-      <div className="confirm-modal">
-        <h2 className="confirm-title">Leave Interview?</h2>
-        <p className="confirm-text">
-          Are you sure you want to leave? Your progress will not be saved.
-        </p>
-
-        <div className="confirm-buttons">
-          <button className="confirm-btn leave" onClick={onConfirm}>
-            Leave
-          </button>
-          <button className="confirm-btn cancel" onClick={onCancel}>
-            Cancel
-          </button>
-        </div>
-      </div>
+      {currentView === 'interviewReview' && (
+        <InterviewReview 
+          analysis={analysisData} 
+          emotionData={emotionData}
+          onBack={handleBackToProblems}
+        />
+      )}
     </div>
   );
 }
@@ -1017,7 +1005,7 @@ function ProblemDescription({ question }) {
   );
 }
 
-function InterviewReview({ analysis, onBack }) {
+function InterviewReview({ analysis, emotionData = [], onBack }) {
   // Check if analysis is in the new format (object with analysis data)
   const isNewFormat = analysis && typeof analysis === 'object' && 'overall_score' in analysis;
   
@@ -1032,6 +1020,7 @@ function InterviewReview({ analysis, onBack }) {
       <Header onBack={onBack}/>
         <div className="interview-review-content">
           <h2>Interview Review</h2>
+          {emotionData.length > 0 && <EmotionStats logData={emotionData} />}
           <div className="analysis-section">
             <h3>Code Analysis</h3>
             <div className="markdown-content">
@@ -1051,6 +1040,9 @@ function InterviewReview({ analysis, onBack }) {
     areas_for_improvement = [],
     detailed_summary = ''
   } = analysis;
+  
+  // Add emotion data to the review if available
+  const hasEmotionData = emotionData && emotionData.length > 0;
   
   // Function to render a score bar
   const renderScoreBar = (score, label) => (
@@ -1074,7 +1066,14 @@ function InterviewReview({ analysis, onBack }) {
     <div className="interview-review-container">
       <Header onBack={onBack}/>
       <div className="interview-review-content">
+        <button 
+          onClick={onBack}
+          className="back-to-problems-btn"
+        >
+          ← Back to Problems
+        </button>
         <h2>Interview Review</h2>
+        {hasEmotionData && <EmotionStats logData={emotionData} />}
         
         <div className="overall-score">
           <h3>Overall Score: <span className="score">{overall_score.toFixed(1)}/10</span></h3>
@@ -1154,8 +1153,27 @@ function Interview({ question, onInterviewFinish, onBack }) {
   const responseAudioRef = useRef(null);   // for sendToElevenLabs()
   
   // Handle interview start when user is ready
-  const handleReady = () => {
-    setInterviewStarted(true);
+  const handleReady = async () => {
+    try {
+      // Start health tracking when interview starts
+      const response = await fetch('http://localhost:5008/start_problem', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        console.error('Failed to start health tracking');
+      } else {
+        console.log('Health tracking started');
+      }
+      
+      setInterviewStarted(true);
+    } catch (error) {
+      console.error('Error starting health tracking:', error);
+      setInterviewStarted(true); // Continue with interview even if health tracking fails
+    }
   };
 
   useEffect(() => {
@@ -1183,21 +1201,82 @@ function Interview({ question, onInterviewFinish, onBack }) {
     }
   }, [fontSize]);
 
+  // Set up camera and audio context on mount and clean up on unmount
   useEffect(() => {
-    const getCamera = async () => {
+    // Initialize camera
+    const startCamera = async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          video: { 
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+            facingMode: 'user' 
+          } 
+        });
+        
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
+          await videoRef.current.play();
         }
+        
+        // Store the stream for cleanup
+        const currentStream = stream;
+        
+        // Cleanup function
+        return () => {
+          if (currentStream) {
+            currentStream.getTracks().forEach(track => track.stop());
+          }
+          if (videoRef.current) {
+            videoRef.current.srcObject = null;
+          }
+        };
       } catch (err) {
-        console.error("Error accessing camera: ", err);
+        console.error('Error accessing camera:', err);
       }
     };
+    
+    // Start camera
+    const cleanupCamera = startCamera();
+    
+    // Return cleanup function
+    return async () => {
+      // Stop health tracking if component unmounts during interview
+      if (interviewStarted) {
+        try {
+          await fetch('http://localhost:5008/end_problem', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+          console.log('Health tracking stopped on unmount');
+        } catch (error) {
+          console.error('Error stopping health tracking on unmount:', error);
+        }
+      }
+      
+      // Clean up camera
+      if (cleanupCamera) {
+        cleanupCamera.then(cleanup => cleanup && cleanup());
+      }
+      
+      // Clean up audio context
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+      }
+      if (animationFrameId.current) {
+        cancelAnimationFrame(animationFrameId.current);
+      }
+    };
+  }, [interviewStarted]);
+  
+  // Set up audio context on mount
+  useEffect(() => {
+    initAudioContext();
+  }, [isPlaying, isRecording]); // Re-run when recording/playback state changes
 
-    getCamera();
-  }, []);
-
+  // Handle language selection
   const handleLanguageSelect = (language) => {
     setSelectedLanguage(language);
   };
@@ -1233,29 +1312,13 @@ function Interview({ question, onInterviewFinish, onBack }) {
     }
   };
   
-  // Set up audio context on mount and clean up on unmount
-  useEffect(() => {
-    initAudioContext();
-    
-    // Cleanup function
-    return () => {
-      if (animationFrameId.current) {
-        cancelAnimationFrame(animationFrameId.current);
-        animationFrameId.current = null;
-      }
-      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
-        audioContextRef.current.close();
-      }
-    };
-  }, [isPlaying, isRecording]); // Re-run when recording/playback state changes
-  
   // Function to save editor content to test.txt
   const saveEditorContent = async () => {
     try {
       console.log('Saving code to test.txt...');
       console.log('Code content:', code);
       
-      const response = await fetch('http://localhost:5008/save-code', {
+      const response = await fetch('http://127.0.0.1:5008/save-code', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1668,9 +1731,100 @@ function Interview({ question, onInterviewFinish, onBack }) {
     }
   };
 
-return (
-  <div className="interview-wrapper" ref={wrapperRef}>
-      <Header onBack={onBack}/>
+  // Handle interview finish
+  const handleFinish = async () => {
+    try {
+      // Stop health tracking when interview ends
+      const response = await fetch('http://localhost:5008/end_problem', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        console.error('Failed to stop health tracking');
+      } else {
+        console.log('Health tracking stopped');
+      }
+    } catch (error) {
+      console.error('Error stopping health tracking:', error);
+    }
+    
+    if (onInterviewFinish) {
+      onInterviewFinish({
+        question,
+        code,
+        language: selectedLanguage,
+        timestamp: new Date().toISOString()
+      });
+    }
+  };
+
+  return (
+    <div className="interview-wrapper" ref={wrapperRef}>
+      <Header>
+          <button 
+            onClick={onBack}
+            className="back-button"
+            title="Exit Interview"
+            style={{
+              background: 'rgba(255, 255, 255, 0.1)',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              borderRadius: '4px',
+              color: 'white',
+              cursor: 'pointer',
+              padding: '8px 12px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: '36px',
+              width: '36px',
+              transition: 'all 0.2s ease',
+              position: 'absolute',
+              left: '15px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              backdropFilter: 'blur(4px)',
+              zIndex: 10
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)';
+              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+            }}
+          >
+            <svg 
+              width="20" 
+              height="20" 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              xmlns="http://www.w3.org/2000/svg"
+              style={{
+                transition: 'transform 0.2s ease',
+              }}
+              className="back-icon"
+            >
+              <path 
+                d="M18 4H6C4.89543 4 4 4.89543 4 6V18C4 19.1046 4.89543 20 6 20H18C19.1046 20 20 19.1046 20 18V6C20 4.89543 19.1046 4 18 4Z" 
+                stroke="currentColor" 
+                strokeWidth="1.5" 
+                strokeLinecap="round" 
+                strokeLinejoin="round"
+              />
+              <path 
+                d="M10 12H16M10 12L13 9M10 12L13 15" 
+                stroke="currentColor" 
+                strokeWidth="1.5" 
+                strokeLinecap="round" 
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
+      </Header>
       <div className="interview-container">
         <div className="main-content">
           <div className="editor-container">
@@ -1803,7 +1957,21 @@ return (
           </div>
         </div>
         <div className="sidebar">
-          <video ref={videoRef} className="camera-view" autoPlay playsInline></video>
+          <div className="camera-container" style={{ position: 'relative', width: '100%', height: '240px', overflow: 'hidden', borderRadius: '8px', backgroundColor: '#1e1e1e' }}>
+            <video 
+              ref={videoRef} 
+              className="camera-view" 
+              autoPlay 
+              playsInline 
+              muted
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                transform: 'scaleX(-1)' // Mirror the video for a more natural feel
+              }}
+            />
+          </div>
           <LanguageSelector selectedLanguage={selectedLanguage} onLanguageSelect={handleLanguageSelect} />
           <ProblemDescription question={question} />
         </div>
