@@ -760,11 +760,14 @@ function Login({ onLogin }) {
   return (
     <div className="login-container">
       <div className="login-box">
-        <h2>Log In</h2>
-        <input type="email" placeholder="Email" />
-        <input type="password" placeholder="Password" />
-        <button onClick={onLogin}>Log In</button>
-        <p className="signup-text">Don't have an account? <a href="#">Sign up</a></p>
+        <h2 className="login-title">Welcome back</h2>
+        <p className="login-subtitle">Sign in to start your interview session</p>
+        <input type="email" placeholder="Email" className="input-field" />
+        <input type="password" placeholder="Password" className="input-field" />
+        <button onClick={onLogin} className="primary-button">Log In</button>
+        <p className="signup-text">
+          Don't have an account? <a href="#" className="link">Sign up</a>
+        </p>
       </div>
     </div>
   );
@@ -808,7 +811,7 @@ function QuestionSelector({ onQuestionSelect }) {
   return (
     <div className="question-selector-container">
       <div className="question-header">
-        <h2>Interview Questions</h2>
+        <h2 className="page-title">Interview Questions</h2>
         <div className="question-filters">
           <input 
             type="text" 
@@ -861,7 +864,7 @@ function QuestionSelector({ onQuestionSelect }) {
               <div className="table-cell">
                 <span 
                   className="difficulty-tag"
-                  style={{ backgroundColor: getDifficultyColor(q.difficulty) }}
+                  data-difficulty={q.difficulty}
                 >
                   {q.difficulty}
                 </span>
@@ -879,11 +882,38 @@ function QuestionSelector({ onQuestionSelect }) {
   );
 }
 
-function Header({ children }) {
+function Header({ onBack }) {
   return (
-    <header className="app-header" style={{ position: 'relative' }}>
-      {children}
-      <h1 style={{ margin: 0 }}>InterviewerMock</h1>
+    <header className="app-header">
+      <div className="app-header-inner">
+
+        {/* LEFT — Exit button */}
+        <button className="back-button" onClick={onBack}>
+          <svg
+            width="25"
+            height="25"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="back-icon"
+          >
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
+        </button>
+
+        {/* CENTER — Logo */}
+        <div className="app-logo">
+          <div className="logo-mark">IM</div>
+          <span className="logo-text">InterviewerMock</span>
+        </div>
+
+        {/* RIGHT — Empty placeholder to keep center alignment */}
+        <div className="header-spacer"></div>
+
+      </div>
     </header>
   );
 }
@@ -1587,70 +1617,39 @@ function Interview({ question, onInterviewFinish, onBack }) {
     }
   };
 
-  return (
-    <div className="interview-wrapper" ref={wrapperRef}>
-      <Header>
-          <button 
-            onClick={onBack}
-            className="back-button"
-            title="Exit Interview"
-            style={{
-              background: 'rgba(255, 255, 255, 0.1)',
-              border: '1px solid rgba(255, 255, 255, 0.2)',
-              borderRadius: '4px',
-              color: 'white',
-              cursor: 'pointer',
-              padding: '8px 12px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              height: '36px',
-              width: '36px',
-              transition: 'all 0.2s ease',
-              position: 'absolute',
-              left: '15px',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              backdropFilter: 'blur(4px)',
-              zIndex: 10
-            }}
-            onMouseOver={(e) => {
-              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)';
-              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)';
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
-              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
-            }}
-          >
-            <svg 
-              width="20" 
-              height="20" 
-              viewBox="0 0 24 24" 
-              fill="none" 
-              xmlns="http://www.w3.org/2000/svg"
-              style={{
-                transition: 'transform 0.2s ease',
-              }}
-              className="back-icon"
-            >
-              <path 
-                d="M18 4H6C4.89543 4 4 4.89543 4 6V18C4 19.1046 4.89543 20 6 20H18C19.1046 20 20 19.1046 20 18V6C20 4.89543 19.1046 4 18 4Z" 
-                stroke="currentColor" 
-                strokeWidth="1.5" 
-                strokeLinecap="round" 
-                strokeLinejoin="round"
-              />
-              <path 
-                d="M10 12H16M10 12L13 9M10 12L13 15" 
-                stroke="currentColor" 
-                strokeWidth="1.5" 
-                strokeLinecap="round" 
-                strokeLinejoin="round"
-              />
-            </svg>
-          </button>
-      </Header>
+return (
+  <div className="interview-wrapper" ref={wrapperRef}>
+    <Header>
+      <button
+        onClick={onBack}
+        className="back-button"
+        title="Exit Interview"
+      >
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="back-icon"
+        >
+          <path
+            d="M18 4H6C4.89543 4 4 4.89543 4 6V18C4 19.1046 4.89543 20 6 20H18C19.1046 20 20 19.1046 20 18V6C20 4.89543 19.1046 4 18 4Z"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M10 12H16M10 12L13 9M10 12L13 15"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </button>
+    </Header>
       <div className="interview-container">
         <div className="main-content">
           <div className="editor-container">
