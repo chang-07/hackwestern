@@ -100,7 +100,7 @@ const VoiceChat = () => {
   return (
     <div className="voice-chat-container">
       <div className="header">
-        <button onClick={() => navigate('/')} className="back-button">
+        <button onClick={() => navigate(-1)} className="back-button"> {/* Updated here */}
           ← Back to Interview
         </button>
         <h2>Voice Assistant</h2>

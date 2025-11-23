@@ -4,6 +4,7 @@ import Editor from '@monaco-editor/react';
 import VoiceChat from './components/VoiceChat';
 import SimpleVoiceChat from './components/SimpleVoiceChat';
 import ReactMarkdown from 'react-markdown';
+import EmotionStats from './components/EmotionStats';
 import './App.css';
 
 const questions = [
@@ -712,13 +713,69 @@ const questions = [
   }
 ];
 
+function stopAllAudio(extra = {}) {
+  const { responseAudioRef, ttsAudioRef } = extra;
+
+  try {
+    // Stop all <audio> elements in the DOM
+    document.querySelectorAll("audio").forEach(audio => {
+      try {
+        audio.pause();
+        audio.currentTime = 0;
+      } catch {}
+    });
+
+    // Stop Web Speech API (speech synthesis)
+    if (window.speechSynthesis) {
+      try { window.speechSynthesis.cancel(); } catch {}
+    }
+
+    // Stop ElevenLabs or manually-created Audio() instances
+    if (responseAudioRef?.current) {
+      try {
+        responseAudioRef.current.pause();
+        responseAudioRef.current.currentTime = 0;
+      } catch {}
+    }
+
+    if (ttsAudioRef?.current) {
+      try {
+        ttsAudioRef.current.pause();
+        ttsAudioRef.current.currentTime = 0;
+      } catch {}
+    }
+
+    // Stop any lingering AudioContext if you use one
+    if (window.globalAudioContext) {
+      try {
+        window.globalAudioContext.close();
+        window.globalAudioContext = null;
+      } catch {}
+    }
+
+  } catch (err) {
+    console.log("stopAllAudio error:", err);
+  }
+}
+
 function App() {
-  const [currentView, setCurrentView] = useState('login');
+  const [currentView, setCurrentView] = useState('home');
   const [selectedQuestion, setSelectedQuestion] = useState(null);
   const [analysisData, setAnalysisData] = useState(null);
+  const [emotionData, setEmotionData] = useState([]);
   const navigate = useNavigate();
 
-  const handleLogin = () => {
+  useEffect(() => {
+    if (currentView !== "interview") {
+      stopAllAudio();
+    }
+  }, [currentView]);
+
+  const handleBackToProblems = () => {
+    setCurrentView('questionSelector');
+  };
+
+  const handleHome = () => {
     setCurrentView('questionSelector');
   };
 
@@ -727,20 +784,20 @@ function App() {
     setCurrentView('interview');
   };
 
-  const handleInterviewFinish = (data) => {
+  const handleInterviewFinish = (data, emotionLogs = []) => {
     setAnalysisData(data);
+    setEmotionData(emotionLogs);
     setCurrentView('interviewReview');
   };
 
   const handleBack = () => {
-    if (window.confirm('Are you sure you want to leave the interview? Your progress will not be saved.')) {
+      stopAllAudio();
       setCurrentView('questionSelector');
-    }
   };
 
   return (
     <div className="App">
-      {currentView === 'login' && <Login onLogin={handleLogin} />}
+      {currentView === 'home' && <Home onHome={handleHome} />}
       {currentView === 'questionSelector' && (
         <QuestionSelector onQuestionSelect={handleQuestionSelect} />
       )}
@@ -751,21 +808,63 @@ function App() {
           onBack={handleBack}
         />
       )}
-      {currentView === 'interviewReview' && <InterviewReview analysis={analysisData} />}
+      {currentView === 'interviewReview' && (
+        <InterviewReview 
+          analysis={analysisData} 
+          emotionData={emotionData}
+          onBack={handleBackToProblems}
+        />
+      )}
     </div>
   );
 }
 
-function Login({ onLogin }) {
+function Home({ onHome }) {
   return (
-    <div className="login-container">
-      <div className="login-box">
-        <h2>Log In</h2>
-        <input type="email" placeholder="Email" />
-        <input type="password" placeholder="Password" />
-        <button onClick={onLogin}>Log In</button>
-        <p className="signup-text">Don't have an account? <a href="#">Sign up</a></p>
-      </div>
+    <div className="home-container">
+      <header className="home-nav">
+        <div className="home-logo">
+          <span className="home-logo-icon">AI</span>
+          <span className="home-logo-text">InterviewCoach</span>
+        </div>
+        <nav className="home-nav-links">
+        <span class="pots-text">P.O.T.S.</span>
+        </nav>
+        <button className="home-nav-cta" onClick={onHome}>
+          Start interview
+        </button>
+      </header>
+
+      <main>
+        <section className="home-hero">
+          <div className="home-hero-text">
+            <h1>
+              Practice your <span className="home-hero-highlight">technical interviews</span>.
+            </h1>
+            <p className="home-hero-subtitle">
+              Quick, realistic mock interviews with instant feedback on your code and communication.
+            </p>
+            <div className="home-hero-actions">
+              <button className="primary-button" onClick={onHome}>
+                Start a mock interview
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section id="features" className="home-section">
+          <h2 className="home-section-title">What you get</h2>
+          <ul className="home-features-list">
+            <li>Live coding questions with an AI interviewer</li>
+            <li>Behavioral practice with follow-up questions</li>
+            <li>Simple feedback so you know what to fix next</li>
+          </ul>
+        </section>
+      </main>
+
+      <footer className="home-footer">
+        <span>© {new Date().getFullYear()} InterviewCoach</span>
+      </footer>
     </div>
   );
 }
@@ -808,7 +907,7 @@ function QuestionSelector({ onQuestionSelect }) {
   return (
     <div className="question-selector-container">
       <div className="question-header">
-        <h2>Interview Questions</h2>
+        <h2 className="page-title">Interview Questions</h2>
         <div className="question-filters">
           <input 
             type="text" 
@@ -861,7 +960,7 @@ function QuestionSelector({ onQuestionSelect }) {
               <div className="table-cell">
                 <span 
                   className="difficulty-tag"
-                  style={{ backgroundColor: getDifficultyColor(q.difficulty) }}
+                  data-difficulty={q.difficulty}
                 >
                   {q.difficulty}
                 </span>
@@ -879,11 +978,39 @@ function QuestionSelector({ onQuestionSelect }) {
   );
 }
 
-function Header({ children }) {
+function Header({ onBack }) {
   return (
-    <header className="app-header" style={{ position: 'relative' }}>
-      {children}
-      <h1 style={{ margin: 0 }}>InterviewerMock</h1>
+    <header className="app-header">
+      <div className="app-header-inner">
+        <button
+          className="back-button"
+          onClick={onBack}          // ✅ just call the prop
+          title="Exit Interview"
+        >          
+        <svg
+            width="25"
+            height="25"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="back-icon"
+          >
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
+        </button>
+
+        {/* CENTER — Logo */}
+        <div className="app-logo">
+          <div className="logo-mark">🍲</div>
+          <span className="logo-text">P.O.T.S.</span>
+        </div>
+
+        {/* RIGHT — Spacer */}
+        <div className="header-spacer"></div>
+      </div>
     </header>
   );
 }
@@ -939,107 +1066,132 @@ function ProblemDescription({ question }) {
   );
 }
 
-function InterviewReview({ analysis }) {
-  // Check if analysis is in the new format (object with analysis data)
-  const isNewFormat = analysis && typeof analysis === 'object' && 'overall_score' in analysis;
-  
-  // For backward compatibility with old string format
+function InterviewReview({ analysis, onBack, emotionData = [] }) {
+  stopAllAudio();
+
+  const isNewFormat =
+    analysis &&
+    typeof analysis === "object" &&
+    "overall_score" in analysis;
+
   if (!isNewFormat) {
-    const cleanAnalysis = analysis ? 
-      analysis.replace(/^```markdown\n|```$/g, '') : 
-      'No analysis available';
-      
+    const cleanAnalysis = analysis
+      ? analysis.replace(/^```markdown\n|```$/g, "")
+      : "No analysis available";
+
     return (
-      <div className="interview-review-container">
-        <Header />
-        <div className="interview-review-content">
-          <h2>Interview Review</h2>
-          <div className="analysis-section">
-            <h3>Code Analysis</h3>
-            <div className="markdown-content">
-              <ReactMarkdown>{cleanAnalysis}</ReactMarkdown>
-            </div>
+      <div className="review-wrapper">
+        <h2 className="review-title">Interview Review</h2>
+
+        {emotionData.length > 0 && (
+          <EmotionStats logData={emotionData} />
+        )}
+
+        <div className="review-card">
+          <h3 className="section-title">Code Analysis</h3>
+          <div className="markdown-body">
+            <ReactMarkdown>{cleanAnalysis}</ReactMarkdown>
           </div>
         </div>
       </div>
     );
   }
 
-  // New format with structured data
-  const { 
-    overall_score, 
+  const {
+    overall_score,
     detailed_scores = {},
     strengths = [],
     areas_for_improvement = [],
-    detailed_summary = ''
+    detailed_summary = "",
   } = analysis;
-  
-  // Function to render a score bar
+
   const renderScoreBar = (score, label) => (
-    <div key={label} className="score-item">
+    <div key={label} className="score-row">
       <div className="score-label">{label}</div>
-      <div className="score-bar-container">
-        <div 
-          className="score-bar" 
+
+      <div className="score-track">
+        <div
+          className="score-fill"
           style={{ width: `${(score / 10) * 100}%` }}
-          aria-valuenow={score}
-          aria-valuemin="0"
-          aria-valuemax="10"
         >
-          {score.toFixed(1)}/10
+          <span className="score-value">
+            {score.toFixed(1)}/10
+          </span>
         </div>
       </div>
     </div>
   );
-  
+
   return (
-    <div className="interview-review-container">
-      <Header />
-      <div className="interview-review-content">
-        <h2>Interview Review</h2>
-        
-        <div className="overall-score">
-          <h3>Overall Score: <span className="score">{overall_score.toFixed(1)}/10</span></h3>
+    <div className="review-wrapper">
+      <Header onBack={onBack} />
+
+      {/* TITLE */}
+      <h2 className="review-title">Interview Review</h2>
+
+      {/* OVERALL SCORE – CENTER */}
+      <div className="overall-score-card">
+        <div className="overall-label">Overall Score</div>
+
+        <div className="overall-value">
+          {overall_score.toFixed(1)}/10
         </div>
-        
-        <div className="scores-section">
-          <h3>Detailed Scores</h3>
-          {Object.entries(detailed_scores).map(([key, score]) => (
-            renderScoreBar(score, key.split('_').map(word => 
-              word.charAt(0).toUpperCase() + word.slice(1)
-            ).join(' '))
-          ))}
+      </div>
+
+      {/* TWO COLUMN LAYOUT */}
+      <div className="review-columns">
+
+        {/* LEFT — DETAILED SCORES */}
+        <div className="left-column">
+          <div className="review-card">
+            <h3 className="section-title">Detailed Scores</h3>
+
+            <div className="scores-grid">
+              {Object.entries(detailed_scores).map(([key, score]) =>
+                renderScoreBar(
+                  score,
+                  key
+                    .split("_")
+                    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+                    .join(" ")
+                )
+              )}
+            </div>
+          </div>
         </div>
-        
-        <div className="analysis-section">
-          <h3>Strengths</h3>
-          <ul className="strengths-list">
-            {strengths.map((strength, index) => (
-              <li key={index} className="strength-item">
-                <span className="strength-icon">✓</span>
-                {strength}
-              </li>
-            ))}
-          </ul>
-          
-          {areas_for_improvement.length > 0 && (
-            <>
-              <h3>Areas for Improvement</h3>
-              <ul className="improvements-list">
-                {areas_for_improvement.map((item, index) => (
-                  <li key={index} className="improvement-item">
-                    <span className="improvement-icon">•</span>
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </>
-          )}
-          
+
+        {/* RIGHT — STRENGTHS + IMPROVEMENTS */}
+        <div className="right-column">
+          <div className="review-card">
+            <h3 className="section-title">Strengths</h3>
+
+            <ul className="list strengths-list">
+              {strengths.map((item, i) => (
+                <li key={i} className="list-item strength-item">
+                  ✓ {item}
+                </li>
+              ))}
+            </ul>
+
+            {areas_for_improvement.length > 0 && (
+              <>
+                <h3 className="section-title">Areas for Improvement</h3>
+
+                <ul className="list improvements-list">
+                  {areas_for_improvement.map((item, i) => (
+                    <li key={i} className="list-item improvement-item">
+                      • {item}
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </div>
+
           {detailed_summary && (
-            <div className="detailed-summary">
-              <h3>Detailed Feedback</h3>
-              <div className="markdown-content">
+            <div className="review-card">
+              <h3 className="section-title">Detailed Feedback</h3>
+              <div className="markdown-body">
                 <ReactMarkdown>{detailed_summary}</ReactMarkdown>
               </div>
             </div>
@@ -1050,7 +1202,6 @@ function InterviewReview({ analysis }) {
   );
 }
 
-
 function Interview({ question, onInterviewFinish, onBack }) {
   const videoRef = useRef(null);
   const wrapperRef = useRef(null);
@@ -1060,7 +1211,7 @@ function Interview({ question, onInterviewFinish, onBack }) {
   const [fontSize, setFontSize] = useState(20); // Default font size
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [interviewStarted, setInterviewStarted] = useState(false);
-  
+
   // Audio recording state
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -1071,10 +1222,32 @@ function Interview({ question, onInterviewFinish, onBack }) {
   const audioContextRef = useRef(null);
   const analyserRef = useRef(null);
   const animationFrameId = useRef(null);
+
+  const ttsAudioRef = useRef(null);        // for speak()
+  const responseAudioRef = useRef(null);   // for sendToElevenLabs()
   
   // Handle interview start when user is ready
-  const handleReady = () => {
-    setInterviewStarted(true);
+  const handleReady = async () => {
+    try {
+      // Start health tracking when interview starts
+      const response = await fetch('http://localhost:5008/start_problem', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        console.error('Failed to start health tracking');
+      } else {
+        console.log('Health tracking started');
+      }
+      
+      setInterviewStarted(true);
+    } catch (error) {
+      console.error('Error starting health tracking:', error);
+      setInterviewStarted(true); // Continue with interview even if health tracking fails
+    }
   };
 
   useEffect(() => {
@@ -1102,21 +1275,82 @@ function Interview({ question, onInterviewFinish, onBack }) {
     }
   }, [fontSize]);
 
+  // Set up camera and audio context on mount and clean up on unmount
   useEffect(() => {
-    const getCamera = async () => {
+    // Initialize camera
+    const startCamera = async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          video: { 
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+            facingMode: 'user' 
+          } 
+        });
+        
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
+          await videoRef.current.play();
         }
+        
+        // Store the stream for cleanup
+        const currentStream = stream;
+        
+        // Cleanup function
+        return () => {
+          if (currentStream) {
+            currentStream.getTracks().forEach(track => track.stop());
+          }
+          if (videoRef.current) {
+            videoRef.current.srcObject = null;
+          }
+        };
       } catch (err) {
-        console.error("Error accessing camera: ", err);
+        console.error('Error accessing camera:', err);
       }
     };
+    
+    // Start camera
+    const cleanupCamera = startCamera();
+    
+    // Return cleanup function
+    return async () => {
+      // Stop health tracking if component unmounts during interview
+      if (interviewStarted) {
+        try {
+          await fetch('http://localhost:5008/end_problem', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+          console.log('Health tracking stopped on unmount');
+        } catch (error) {
+          console.error('Error stopping health tracking on unmount:', error);
+        }
+      }
+      
+      // Clean up camera
+      if (cleanupCamera) {
+        cleanupCamera.then(cleanup => cleanup && cleanup());
+      }
+      
+      // Clean up audio context
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+      }
+      if (animationFrameId.current) {
+        cancelAnimationFrame(animationFrameId.current);
+      }
+    };
+  }, [interviewStarted]);
+  
+  // Set up audio context on mount
+  useEffect(() => {
+    initAudioContext();
+  }, [isPlaying, isRecording]); // Re-run when recording/playback state changes
 
-    getCamera();
-  }, []);
-
+  // Handle language selection
   const handleLanguageSelect = (language) => {
     setSelectedLanguage(language);
   };
@@ -1152,29 +1386,13 @@ function Interview({ question, onInterviewFinish, onBack }) {
     }
   };
   
-  // Set up audio context on mount and clean up on unmount
-  useEffect(() => {
-    initAudioContext();
-    
-    // Cleanup function
-    return () => {
-      if (animationFrameId.current) {
-        cancelAnimationFrame(animationFrameId.current);
-        animationFrameId.current = null;
-      }
-      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
-        audioContextRef.current.close();
-      }
-    };
-  }, [isPlaying, isRecording]); // Re-run when recording/playback state changes
-  
   // Function to save editor content to test.txt
   const saveEditorContent = async () => {
     try {
       console.log('Saving code to test.txt...');
       console.log('Code content:', code);
       
-      const response = await fetch('http://localhost:5008/save-code', {
+      const response = await fetch('http://127.0.0.1:5008/save-code', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1587,9 +1805,39 @@ function Interview({ question, onInterviewFinish, onBack }) {
     }
   };
 
+  // Handle interview finish
+  const handleFinish = async () => {
+    try {
+      // Stop health tracking when interview ends
+      const response = await fetch('http://localhost:5008/end_problem', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        console.error('Failed to stop health tracking');
+      } else {
+        console.log('Health tracking stopped');
+      }
+    } catch (error) {
+      console.error('Error stopping health tracking:', error);
+    }
+    
+    if (onInterviewFinish) {
+      onInterviewFinish({
+        question,
+        code,
+        language: selectedLanguage,
+        timestamp: new Date().toISOString()
+      });
+    }
+  };
+
   return (
     <div className="interview-wrapper" ref={wrapperRef}>
-      <Header>
+      <Header onBack={onBack}>
           <button 
             onClick={onBack}
             className="back-button"
@@ -1783,7 +2031,21 @@ function Interview({ question, onInterviewFinish, onBack }) {
           </div>
         </div>
         <div className="sidebar">
-          <video ref={videoRef} className="camera-view" autoPlay playsInline></video>
+          <div className="camera-container" style={{ position: 'relative', width: '100%', height: '240px', overflow: 'hidden', borderRadius: '8px', backgroundColor: '#1e1e1e' }}>
+            <video 
+              ref={videoRef} 
+              className="camera-view" 
+              autoPlay 
+              playsInline 
+              muted
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                transform: 'scaleX(-1)' // Mirror the video for a more natural feel
+              }}
+            />
+          </div>
           <LanguageSelector selectedLanguage={selectedLanguage} onLanguageSelect={handleLanguageSelect} />
           <ProblemDescription question={question} />
         </div>
