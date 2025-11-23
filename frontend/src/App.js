@@ -1251,7 +1251,7 @@ function Interview({ question, onInterviewFinish, onBack }) {
       console.log('Saving code to test.txt...');
       console.log('Code content:', code);
       
-      const response = await fetch('http://localhost:5008/save-code', {
+      const response = await fetch('http://127.0.0.1:5008/save-code', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

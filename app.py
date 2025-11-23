@@ -337,6 +337,27 @@ def speech_to_text(audio_path):
         print(f"Error in speech_to_text: {str(e)}")
         return None
 
+@app.route('/save-code', methods=['POST'])
+def save_code():
+    """Save code from the frontend to test.txt"""
+    try:
+        data = request.get_json()
+        code = data.get('code', '')
+        
+        # Get the absolute path to test.txt in the project root
+        test_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'test.txt')
+        
+        # Write the code to test.txt
+        with open(test_file_path, 'w') as f:
+            f.write(code)
+        
+        print(f"Code saved to {test_file_path} (size: {len(code)} bytes)")
+        return jsonify({"status": "success", "message": "Code saved successfully"})
+        
+    except Exception as e:
+        print(f"Error saving code: {str(e)}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
 @app.route('/process_audio', methods=['POST'])
 def process_audio():
     """Process audio input and return a response"""
@@ -368,14 +389,39 @@ def process_audio():
         if audio_file:
             print(f"8. Received audio file: {audio_file.filename} (content type: {audio_file.content_type}, content length: {audio_file.content_length} bytes)")
             
-            # Save the uploaded file
-            audio_path = os.path.join('uploads', 'input.wav')
+            # Save the uploaded file with its original extension
+            file_ext = os.path.splitext(audio_file.filename)[1] or '.webm'
+            audio_path = os.path.join('uploads', f'input{file_ext}')
             audio_file.save(audio_path)
             print(f"9. File saved to {audio_path} (size: {os.path.getsize(audio_path)} bytes)")
             
             # Convert speech to text
             print("10. Converting speech to text...")
-            text = speech_to_text(audio_path)
+            
+            # If the file is not WAV, we need to convert it first
+            if not audio_path.lower().endswith('.wav'):
+                import subprocess
+                wav_path = os.path.splitext(audio_path)[0] + '.wav'
+                try:
+                    # Use ffmpeg to convert the audio to WAV format (16kHz, 16-bit, mono)
+                    subprocess.run([
+                        'ffmpeg', '-y',
+                        '-i', audio_path,
+                        '-ar', '16000',
+                        '-ac', '1',
+                        '-c:a', 'pcm_s16le',
+                        wav_path
+                    ], check=True, capture_output=True)
+                    print(f"10.1. Converted audio to WAV format: {wav_path}")
+                    text = speech_to_text(wav_path)
+                    # Clean up the converted file
+                    if os.path.exists(wav_path):
+                        os.remove(wav_path)
+                except Exception as e:
+                    print(f"Error converting audio to WAV: {str(e)}")
+                    return jsonify({"error": "Failed to process audio format"}), 400
+            else:
+                text = speech_to_text(audio_path)
             
             if not text:
                 return jsonify({"error": "Failed to transcribe audio"}), 500

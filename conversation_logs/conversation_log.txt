@@ -1,12 +1,10 @@
-[2025-11-22 20:46:35] User: One two three just say something back
+[2025-11-22 21:47:03] User: One two three test
 
-[2025-11-22 20:46:39] AI: Thanks. Please walk me through your initial thoughts or your high-level approach for solving the Two Sum problem.
+[2025-11-22 21:47:11] AI: It looks like there's no code shared yet. Please go ahead and type your solution for the Two Sum problem in the editor, and let me know if you're having any technical difficulties.
 
-[2025-11-22 20:49:34] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+[2025-11-22 21:47:24] User: See something now
 
-[2025-11-22 20:49:35] TTS Output: Generated audio: output.mp3 (135881 bytes)
+[2025-11-22 21:47:27] AI: It looks like you've shared a greeting instead of your code. Could you please share your Python solution for the Two Sum problem?
 
-[2025-11-22 20:50:19] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
-
-[2025-11-22 20:50:20] TTS Output: Generated audio: output.mp3 (132956 bytes)
+[2025-11-22 21:47:32] System: Interview analysis completed. Overall score: 1.3/10
 
