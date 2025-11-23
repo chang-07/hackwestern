@@ -1,12 +1,355 @@
-[2025-11-22 16:52:37] User: Uh my name is Chang it's nice to meet you
+[2025-11-22 19:08:16] User: [музика]
 
-[2025-11-22 16:52:38] AI: Hi Chang, nice to meet you too. To start, can you describe your approach to finding the median of two sorted arrays, and what the time complexity of that approach would be?
-
-
-[2025-11-22 16:52:58] User: Um here's my answer right here do you think this looks like this makes sense or do you think there's something off about it
-
-[2025-11-22 16:52:59] AI: This code is functionally correct, but the `sorted(nums1 + nums2)` operation has a time complexity of O(m+n log(m+n)), where m and n are the lengths of the input arrays. Can you think of a way to achieve the same result with a better time complexity, perhaps closer to O(log(min(m, n)))?
+[2025-11-22 19:08:17] AI: Okay, I see you haven't provided any code yet. To start, can you describe your approach to solving the Add Two Numbers problem? What data structures and algorithms are you considering?
 
 
-[2025-11-22 16:53:08] System: Interview analysis completed. Overall score: 3.5/10
+[2025-11-22 19:08:37] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 19:08:39] TTS Output: Generated audio: response_chunk_0.mp3 (125432 bytes)
+
+[2025-11-22 19:09:21] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 19:09:22] TTS Output: Generated audio: response_chunk_0.mp3 (130030 bytes)
+
+[2025-11-22 19:09:35] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 19:09:36] TTS Output: Generated audio: response_chunk_0.mp3 (127522 bytes)
+
+[2025-11-22 19:12:03] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 19:12:05] TTS Output: Generated audio: response_chunk_0.mp3 (126268 bytes)
+
+[2025-11-22 19:15:00] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 19:15:00] TTS Output: Generated audio: response_chunk_0.mp3 (124596 bytes)
+
+[2025-11-22 19:17:44] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 19:17:45] TTS Output: Generated audio: response_chunk_0.mp3 (122507 bytes)
+
+[2025-11-22 19:17:58] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 19:17:59] TTS Output: Generated audio: response_chunk_0.mp3 (128358 bytes)
+
+[2025-11-22 19:18:37] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 19:18:38] TTS Output: Generated audio: response_chunk_0.mp3 (130030 bytes)
+
+[2025-11-22 19:21:02] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 19:21:03] TTS Output: Generated audio: response_chunk_0.mp3 (137553 bytes)
+
+[2025-11-22 19:21:49] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 19:21:50] TTS Output: Generated audio: response_chunk_0.mp3 (132120 bytes)
+
+[2025-11-22 19:22:59] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 19:22:59] TTS Output: Generated audio: response_chunk_0.mp3 (130030 bytes)
+
+[2025-11-22 19:24:13] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 19:24:13] TTS Output: Generated audio: response_chunk_0.mp3 (127104 bytes)
+
+[2025-11-22 19:24:20] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 19:24:21] TTS Output: Generated audio: response_chunk_0.mp3 (122507 bytes)
+
+[2025-11-22 19:24:28] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 19:24:28] TTS Output: Generated audio: response_chunk_0.mp3 (132956 bytes)
+
+[2025-11-22 19:25:04] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 19:25:05] TTS Output: Generated audio: response_chunk_0.mp3 (130030 bytes)
+
+[2025-11-22 19:25:15] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 19:25:16] TTS Output: Generated audio: response_chunk_0.mp3 (132956 bytes)
+
+[2025-11-22 19:30:19] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 19:30:20] TTS Output: Generated audio: response_chunk_0.mp3 (125432 bytes)
+
+[2025-11-22 19:31:57] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 19:31:58] TTS Output: Generated audio: response_chunk_0.mp3 (128358 bytes)
+
+[2025-11-22 19:33:18] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 19:33:19] TTS Output: Generated audio: response_chunk_0.mp3 (119581 bytes)
+
+[2025-11-22 19:35:06] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 19:35:07] TTS Output: Generated audio: response_chunk_0.mp3 (126268 bytes)
+
+[2025-11-22 19:48:38] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 19:48:39] TTS Output: Generated audio: response_chunk_0.mp3 (142569 bytes)
+
+[2025-11-22 19:48:45] System: Interview analysis completed. Overall score: 1.4/10
+
+[2025-11-22 19:51:47] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 19:51:48] TTS Output: Generated audio: response_chunk_0.mp3 (130866 bytes)
+
+[2025-11-22 19:53:34] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 19:53:35] TTS Output: Generated audio: response_chunk_0.mp3 (130866 bytes)
+
+[2025-11-22 19:53:38] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 19:53:39] TTS Output: Generated audio: response_chunk_0.mp3 (124178 bytes)
+
+[2025-11-22 19:55:03] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 19:55:04] TTS Output: Generated audio: response_chunk_0.mp3 (123342 bytes)
+
+[2025-11-22 19:55:37] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 19:55:38] TTS Output: Generated audio: response_chunk_0.mp3 (129194 bytes)
+
+[2025-11-22 20:27:36] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 20:27:36] TTS Output: Generated audio: response_chunk_0.mp3 (127104 bytes)
+
+[2025-11-22 20:32:29] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 20:32:30] TTS Output: Generated audio: response_chunk_0.mp3 (130866 bytes)
+
+[2025-11-22 20:32:51] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 20:32:51] TTS Output: Generated audio: response_chunk_0.mp3 (125432 bytes)
+
+[2025-11-22 20:32:54] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 20:32:54] TTS Output: Generated audio: response_chunk_0.mp3 (129194 bytes)
+
+[2025-11-22 20:36:24] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 20:36:25] TTS Output: Generated audio: response_chunk_0.mp3 (126268 bytes)
+
+[2025-11-22 20:48:15] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 20:48:15] TTS Output: Generated audio: response_chunk_0.mp3 (126268 bytes)
+
+[2025-11-22 20:55:46] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 20:55:48] TTS Output: Generated audio: response_chunk_0.mp3 (125432 bytes)
+
+[2025-11-22 20:55:50] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 20:55:51] TTS Output: Generated audio: response_chunk_0.mp3 (132956 bytes)
+
+[2025-11-22 20:55:58] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 20:55:58] TTS Output: Generated audio: response_chunk_0.mp3 (120417 bytes)
+
+[2025-11-22 20:56:23] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 20:56:24] TTS Output: Generated audio: response_chunk_0.mp3 (130030 bytes)
+
+[2025-11-22 20:56:24] System: Interview analysis completed. Overall score: 1.4/10
+
+[2025-11-22 20:58:23] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 20:58:25] TTS Output: Generated audio: response_chunk_0.mp3 (128358 bytes)
+
+[2025-11-22 20:58:25] System: Interview analysis completed. Overall score: 1.4/10
+
+[2025-11-22 21:03:11] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 21:03:12] TTS Error: Failed to generate speech for text: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?...
+
+[2025-11-22 21:03:12] System: Interview analysis completed. Overall score: 1.4/10
+
+[2025-11-22 21:03:29] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 21:03:29] TTS Error: Failed to generate speech for text: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?...
+
+[2025-11-22 21:03:34] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 21:03:34] System: Interview analysis completed. Overall score: 1.4/10
+
+[2025-11-22 21:03:35] TTS Error: Failed to generate speech for text: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?...
+
+[2025-11-22 21:07:15] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 21:07:16] TTS Error: Failed to generate speech for text: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?...
+
+[2025-11-22 21:16:03] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 21:16:04] TTS Error: Failed to generate speech for text: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?...
+
+[2025-11-22 21:18:55] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 21:18:56] TTS Error: Failed to generate speech for text: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?...
+
+[2025-11-22 21:21:16] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 21:21:16] TTS Error: Failed to generate speech for text: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?...
+
+[2025-11-22 21:21:26] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 21:21:26] TTS Error: Failed to generate speech for text: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?...
+
+[2025-11-22 21:22:20] System: Interview analysis completed. Overall score: 1.4/10
+
+[2025-11-22 21:22:25] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 21:22:26] TTS Error: Failed to generate speech for text: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?...
+
+[2025-11-22 21:22:43] User: Can you tell me what's in my mouth right now?
+
+[2025-11-22 21:22:44] AI: I'm sorry, I'm having trouble processing your request right now. Please try again later.
+
+[2025-11-22 21:22:44] Error: Failed to generate speech. Audio path: None
+
+[2025-11-22 21:22:53] User: What's your name
+
+[2025-11-22 21:22:55] AI: I'm sorry, I'm having trouble processing your request right now. Please try again later.
+
+[2025-11-22 21:22:55] Error: Failed to generate speech. Audio path: None
+
+[2025-11-22 21:23:16] User: What's your name?
+
+[2025-11-22 21:23:16] AI: I'm sorry, I'm having trouble processing your request right now. Please try again later.
+
+[2025-11-22 21:23:17] Error: Failed to generate speech. Audio path: None
+
+[2025-11-22 21:34:42] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 21:34:42] TTS Error: Failed to generate speech for text: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?...
+
+[2025-11-22 21:36:06] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 21:36:07] TTS Error: Failed to generate speech for text: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?...
+
+[2025-11-22 21:36:15] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 21:36:16] TTS Error: Failed to generate speech for text: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?...
+
+[2025-11-22 21:36:23] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 21:36:25] TTS Error: Failed to generate speech for text: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?...
+
+[2025-11-22 21:36:26] System: Interview analysis completed. Overall score: 0.5/10
+
+[2025-11-22 21:37:56] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 21:37:57] TTS Error: Failed to generate speech for text: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?...
+
+[2025-11-22 21:39:03] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 21:39:03] TTS Error: Failed to generate speech for text: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?...
+
+[2025-11-22 21:39:11] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 21:39:12] TTS Error: Failed to generate speech for text: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?...
+
+[2025-11-22 21:39:20] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 21:39:21] System: Interview analysis completed. Overall score: 0.5/10
+
+[2025-11-22 21:39:21] TTS Error: Failed to generate speech for text: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?...
+
+[2025-11-22 21:40:55] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 21:40:55] TTS Error: Failed to generate speech for text: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?...
+
+[2025-11-22 21:41:01] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 21:41:01] TTS Error: Failed to generate speech for text: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?...
+
+[2025-11-22 21:41:02] System: Interview analysis completed. Overall score: 0.5/10
+
+[2025-11-22 21:41:08] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 21:41:08] TTS Error: Failed to generate speech for text: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?...
+
+[2025-11-22 21:41:09] System: Interview analysis completed. Overall score: 0.5/10
+
+[2025-11-22 21:41:28] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 21:41:28] TTS Error: Failed to generate speech for text: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?...
+
+[2025-11-22 21:44:10] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 21:44:10] TTS Error: Failed to generate speech for text: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?...
+
+[2025-11-22 21:51:32] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 21:51:33] TTS Error: Failed to generate speech for text: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?...
+
+[2025-11-22 21:51:55] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 21:51:55] TTS Error: Failed to generate speech for text: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?...
+
+[2025-11-22 21:53:13] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 21:53:14] TTS Error: Failed to generate speech for text: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?...
+
+[2025-11-22 21:54:21] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 21:54:21] TTS Error: Failed to generate speech for text: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?...
+
+[2025-11-22 21:55:42] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 21:55:43] TTS Error: Failed to generate speech for text: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?...
+
+[2025-11-22 22:00:14] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 22:00:14] TTS Error: Failed to generate speech for text: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?...
+
+[2025-11-22 22:01:14] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 22:01:14] TTS Error: Failed to generate speech for text: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?...
+
+[2025-11-22 22:01:16] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 22:01:16] TTS Error: Failed to generate speech for text: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?...
+
+[2025-11-22 22:01:21] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 22:01:21] TTS Error: Failed to generate speech for text: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?...
+
+[2025-11-22 22:12:49] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 22:12:49] TTS Error: Failed to generate speech for text: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?...
+
+[2025-11-22 22:13:36] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 22:13:37] TTS Error: Failed to generate speech for text: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?...
+
+[2025-11-22 22:14:22] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 22:14:23] TTS Error: Failed to generate speech for text: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?...
+
+[2025-11-22 22:14:29] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 22:14:29] TTS Error: Failed to generate speech for text: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?...
+
+[2025-11-22 22:14:30] System: Interview analysis completed. Overall score: 0.5/10
+
+[2025-11-22 22:14:36] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 22:14:36] TTS Error: Failed to generate speech for text: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?...
+
+[2025-11-22 22:16:30] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 22:16:31] TTS Error: Failed to generate speech for text: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?...
+
+[2025-11-22 22:16:36] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 22:16:37] TTS Error: Failed to generate speech for text: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?...
+
+[2025-11-22 22:17:04] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 22:17:04] TTS Error: Failed to generate speech for text: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?...
+
+[2025-11-22 22:17:05] System: Interview analysis completed. Overall score: 0.5/10
+
+[2025-11-22 22:17:09] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 22:17:10] TTS Error: Failed to generate speech for text: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?...
 

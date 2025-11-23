@@ -1,4 +1,8 @@
-Flask
-python-dotenv
-google-generativeai
+flask
 flask-cors
+python-dotenv
+requests
+pydub==0.25.1
+importlib-metadata==6.8.0
+google-generativeai==0.4.1
+protobuf<5

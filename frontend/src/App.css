@@ -233,18 +233,10 @@ body {
   color: var(--text-main);
 }
 
-.app-logo {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  pointer-events: none;
-}
-
 .logo-mark {
   width: 34px;
-  height: 34px;
+  height: 37px !important;
   border-radius: 10px;
-  background: linear-gradient(135deg, #2563eb, #7c3aed);
   color: #fff;
   display: flex;
   justify-content: center;
@@ -252,6 +244,7 @@ body {
   font-weight: 600;
   font-size: 0.9rem;
   box-shadow: 0 3px 12px rgba(37, 99, 235, 0.3);
+  font-size: 25px !important;
 }
 
 /* Remove the white strip above the editor */
@@ -305,6 +298,29 @@ body {
   flex-wrap: wrap;
   gap: 10px;
   align-items: center;
+}
+
+select {
+  font-family: "Inter", "Segoe UI", sans-serif;
+  font-size: 15px;
+  font-weight: 500;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 2px solid #c7c7ff; /* soft purple border */
+  outline: none;
+  cursor: pointer;
+}
+
+select:focus {
+  border-color: #6b63ff;
+  box-shadow: 0 0 6px rgba(107, 99, 255, 0.4);
+}
+
+select option {
+  font-family: "Inter", "Segoe UI", sans-serif;
+  font-size: 15px;
+  font-weight: 500;
+  padding: 8px 12px;
 }
 
 .search-input,
@@ -920,4 +936,43 @@ body {
 /* Empty placeholder to balance the grid */
 .header-spacer {
   width: 42px;
+}
+
+/* ===== Confirm Leave Modal ===== */
+
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.confirm-modal {
+  background: white;
+  width: 420px;
+  border-radius: 18px;
+  padding: 26px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
+  font-family: Inter, system-ui, sans-serif;
+}
+
+.confirm-title {
+  margin: 0 0 10px;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.confirm-text {
+  margin: 0 0 24px;
+  color: #444;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.confirm-buttons {
+  display: flex;
+  justify-content: flex-end;
 }

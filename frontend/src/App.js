@@ -4,6 +4,7 @@ import Editor from '@monaco-editor/react';
 import VoiceChat from './components/VoiceChat';
 import SimpleVoiceChat from './components/SimpleVoiceChat';
 import ReactMarkdown from 'react-markdown';
+
 import './App.css';
 
 const questions = [
@@ -712,11 +713,35 @@ const questions = [
   }
 ];
 
+function stopAllAudio() {
+  try {
+    // Stop all playing HTML audio elements
+    const audios = document.querySelectorAll("audio");
+    audios.forEach(a => {
+      a.pause();
+      a.currentTime = 0;
+    });
+
+    // Stop Web Speech / TTS if you're using it
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+  } catch (e) {
+    console.log("stopAllAudio error:", e);
+  }
+}
+
 function App() {
   const [currentView, setCurrentView] = useState('login');
   const [selectedQuestion, setSelectedQuestion] = useState(null);
   const [analysisData, setAnalysisData] = useState(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (currentView !== "interview") {
+      stopAllAudio();
+    }
+  }, [currentView]);
 
   const handleLogin = () => {
     setCurrentView('questionSelector');
@@ -733,9 +758,7 @@ function App() {
   };
 
   const handleBack = () => {
-    if (window.confirm('Are you sure you want to leave the interview? Your progress will not be saved.')) {
       setCurrentView('questionSelector');
-    }
   };
 
   return (
@@ -751,7 +774,31 @@ function App() {
           onBack={handleBack}
         />
       )}
-      {currentView === 'interviewReview' && <InterviewReview analysis={analysisData} />}
+      {currentView === 'interviewReview' && <InterviewReview analysis={analysisData} onBack={handleBack}/>}
+    </div>
+  );
+}
+
+function ConfirmLeaveModal({ open, onConfirm, onCancel }) {
+  if (!open) return null;
+
+  return (
+    <div className="confirm-overlay">
+      <div className="confirm-modal">
+        <h2 className="confirm-title">Leave Interview?</h2>
+        <p className="confirm-text">
+          Are you sure you want to leave? Your progress will not be saved.
+        </p>
+
+        <div className="confirm-buttons">
+          <button className="confirm-btn leave" onClick={onConfirm}>
+            Leave
+          </button>
+          <button className="confirm-btn cancel" onClick={onCancel}>
+            Cancel
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -886,10 +933,12 @@ function Header({ onBack }) {
   return (
     <header className="app-header">
       <div className="app-header-inner">
-
-        {/* LEFT — Exit button */}
-        <button className="back-button" onClick={onBack}>
-          <svg
+        <button
+          className="back-button"
+          onClick={onBack}          // ✅ just call the prop
+          title="Exit Interview"
+        >          
+        <svg
             width="25"
             height="25"
             viewBox="0 0 24 24"
@@ -906,13 +955,12 @@ function Header({ onBack }) {
 
         {/* CENTER — Logo */}
         <div className="app-logo">
-          <div className="logo-mark">IM</div>
-          <span className="logo-text">InterviewerMock</span>
+          <div className="logo-mark">🍲</div>
+          <span className="logo-text">P.O.T.S.</span>
         </div>
 
-        {/* RIGHT — Empty placeholder to keep center alignment */}
+        {/* RIGHT — Spacer */}
         <div className="header-spacer"></div>
-
       </div>
     </header>
   );
@@ -969,7 +1017,7 @@ function ProblemDescription({ question }) {
   );
 }
 
-function InterviewReview({ analysis }) {
+function InterviewReview({ analysis, onBack }) {
   // Check if analysis is in the new format (object with analysis data)
   const isNewFormat = analysis && typeof analysis === 'object' && 'overall_score' in analysis;
   
@@ -981,7 +1029,7 @@ function InterviewReview({ analysis }) {
       
     return (
       <div className="interview-review-container">
-        <Header />
+      <Header onBack={onBack}/>
         <div className="interview-review-content">
           <h2>Interview Review</h2>
           <div className="analysis-section">
@@ -1024,7 +1072,7 @@ function InterviewReview({ analysis }) {
   
   return (
     <div className="interview-review-container">
-      <Header />
+      <Header onBack={onBack}/>
       <div className="interview-review-content">
         <h2>Interview Review</h2>
         
@@ -1101,6 +1149,9 @@ function Interview({ question, onInterviewFinish, onBack }) {
   const audioContextRef = useRef(null);
   const analyserRef = useRef(null);
   const animationFrameId = useRef(null);
+
+  const ttsAudioRef = useRef(null);        // for speak()
+  const responseAudioRef = useRef(null);   // for sendToElevenLabs()
   
   // Handle interview start when user is ready
   const handleReady = () => {
@@ -1619,37 +1670,7 @@ function Interview({ question, onInterviewFinish, onBack }) {
 
 return (
   <div className="interview-wrapper" ref={wrapperRef}>
-    <Header>
-      <button
-        onClick={onBack}
-        className="back-button"
-        title="Exit Interview"
-      >
-        <svg
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          className="back-icon"
-        >
-          <path
-            d="M18 4H6C4.89543 4 4 4.89543 4 6V18C4 19.1046 4.89543 20 6 20H18C19.1046 20 20 19.1046 20 18V6C20 4.89543 19.1046 4 18 4Z"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M10 12H16M10 12L13 9M10 12L13 15"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      </button>
-    </Header>
+      <Header onBack={onBack}/>
       <div className="interview-container">
         <div className="main-content">
           <div className="editor-container">
