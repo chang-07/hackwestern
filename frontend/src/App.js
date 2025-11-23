@@ -714,26 +714,23 @@ const questions = [
 ];
 
 function stopAllAudio(extra = {}) {
-  const {
-    responseAudioRef,
-  } = extra;
+  const { responseAudioRef, ttsAudioRef } = extra;
 
   try {
-    // Stop all playing HTML audio elements in the DOM
-    const audios = document.querySelectorAll("audio");
-    audios.forEach(a => {
+    // Stop all <audio> elements in the DOM
+    document.querySelectorAll("audio").forEach(audio => {
       try {
-        a.pause();
-        a.currentTime = 0;
+        audio.pause();
+        audio.currentTime = 0;
       } catch {}
     });
 
-    // Stop Web Speech / TTS
+    // Stop Web Speech API (speech synthesis)
     if (window.speechSynthesis) {
       try { window.speechSynthesis.cancel(); } catch {}
     }
 
-    // Stop ElevenLabs Audio created with new Audio()
+    // Stop ElevenLabs or manually-created Audio() instances
     if (responseAudioRef?.current) {
       try {
         responseAudioRef.current.pause();
@@ -741,13 +738,28 @@ function stopAllAudio(extra = {}) {
       } catch {}
     }
 
-  } catch (e) {
-    console.log("stopAllAudio error:", e);
+    if (ttsAudioRef?.current) {
+      try {
+        ttsAudioRef.current.pause();
+        ttsAudioRef.current.currentTime = 0;
+      } catch {}
+    }
+
+    // Stop any lingering AudioContext if you use one
+    if (window.globalAudioContext) {
+      try {
+        window.globalAudioContext.close();
+        window.globalAudioContext = null;
+      } catch {}
+    }
+
+  } catch (err) {
+    console.log("stopAllAudio error:", err);
   }
 }
 
 function App() {
-  const [currentView, setCurrentView] = useState('login');
+  const [currentView, setCurrentView] = useState('home');
   const [selectedQuestion, setSelectedQuestion] = useState(null);
   const [analysisData, setAnalysisData] = useState(null);
   const [emotionData, setEmotionData] = useState([]);
@@ -763,7 +775,7 @@ function App() {
     setCurrentView('questionSelector');
   };
 
-  const handleLogin = () => {
+  const handleHome = () => {
     setCurrentView('questionSelector');
   };
 
@@ -785,7 +797,7 @@ function App() {
 
   return (
     <div className="App">
-      {currentView === 'login' && <Login onLogin={handleLogin} />}
+      {currentView === 'home' && <Home onHome={handleHome} />}
       {currentView === 'questionSelector' && (
         <QuestionSelector onQuestionSelect={handleQuestionSelect} />
       )}
@@ -807,19 +819,52 @@ function App() {
   );
 }
 
-function Login({ onLogin }) {
+function Home({ onHome }) {
   return (
-    <div className="login-container">
-      <div className="login-box">
-        <h2 className="login-title">Welcome back</h2>
-        <p className="login-subtitle">Sign in to start your interview session</p>
-        <input type="email" placeholder="Email" className="input-field" />
-        <input type="password" placeholder="Password" className="input-field" />
-        <button onClick={onLogin} className="primary-button">Log In</button>
-        <p className="signup-text">
-          Don't have an account? <a href="#" className="link">Sign up</a>
-        </p>
-      </div>
+    <div className="home-container">
+      <header className="home-nav">
+        <div className="home-logo">
+          <span className="home-logo-icon">AI</span>
+          <span className="home-logo-text">InterviewCoach</span>
+        </div>
+        <nav className="home-nav-links">
+        <span class="pots-text">P.O.T.S.</span>
+        </nav>
+        <button className="home-nav-cta" onClick={onHome}>
+          Start interview
+        </button>
+      </header>
+
+      <main>
+        <section className="home-hero">
+          <div className="home-hero-text">
+            <h1>
+              Practice your <span className="home-hero-highlight">technical interviews</span>.
+            </h1>
+            <p className="home-hero-subtitle">
+              Quick, realistic mock interviews with instant feedback on your code and communication.
+            </p>
+            <div className="home-hero-actions">
+              <button className="primary-button" onClick={onHome}>
+                Start a mock interview
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section id="features" className="home-section">
+          <h2 className="home-section-title">What you get</h2>
+          <ul className="home-features-list">
+            <li>Live coding questions with an AI interviewer</li>
+            <li>Behavioral practice with follow-up questions</li>
+            <li>Simple feedback so you know what to fix next</li>
+          </ul>
+        </section>
+      </main>
+
+      <footer className="home-footer">
+        <span>© {new Date().getFullYear()} InterviewCoach</span>
+      </footer>
     </div>
   );
 }
@@ -1022,109 +1067,131 @@ function ProblemDescription({ question }) {
 }
 
 function InterviewReview({ analysis, onBack, emotionData = [] }) {
-  // Check if analysis is in the new format (object with analysis data)
   stopAllAudio();
-  const isNewFormat = analysis && typeof analysis === 'object' && 'overall_score' in analysis;
-  
-  // For backward compatibility with old string format
+
+  const isNewFormat =
+    analysis &&
+    typeof analysis === "object" &&
+    "overall_score" in analysis;
+
   if (!isNewFormat) {
-    const cleanAnalysis = analysis ? 
-      analysis.replace(/^```markdown\n|```$/g, '') : 
-      'No analysis available';
-      
+    const cleanAnalysis = analysis
+      ? analysis.replace(/^```markdown\n|```$/g, "")
+      : "No analysis available";
+
     return (
-      <div className="interview-review-container">
-          <h2>Interview Review</h2>
-          {emotionData.length > 0 && <EmotionStats logData={emotionData} />}
-          <div className="analysis-section">
-            <h3>Code Analysis</h3>
-            <div className="markdown-content">
-              <ReactMarkdown>{cleanAnalysis}</ReactMarkdown>
-            </div>
+      <div className="review-wrapper">
+        <h2 className="review-title">Interview Review</h2>
+
+        {emotionData.length > 0 && (
+          <EmotionStats logData={emotionData} />
+        )}
+
+        <div className="review-card">
+          <h3 className="section-title">Code Analysis</h3>
+          <div className="markdown-body">
+            <ReactMarkdown>{cleanAnalysis}</ReactMarkdown>
           </div>
+        </div>
       </div>
     );
   }
 
-  // New format with structured data
-  const { 
-    overall_score, 
+  const {
+    overall_score,
     detailed_scores = {},
     strengths = [],
     areas_for_improvement = [],
-    detailed_summary = ''
+    detailed_summary = "",
   } = analysis;
-  
-  // Add emotion data to the review if available
-  const hasEmotionData = emotionData && emotionData.length > 0;
-  
-  // Function to render a score bar
+
   const renderScoreBar = (score, label) => (
-    <div key={label} className="score-item">
+    <div key={label} className="score-row">
       <div className="score-label">{label}</div>
-      <div className="score-bar-container">
-        <div 
-          className="score-bar" 
+
+      <div className="score-track">
+        <div
+          className="score-fill"
           style={{ width: `${(score / 10) * 100}%` }}
-          aria-valuenow={score}
-          aria-valuemin="0"
-          aria-valuemax="10"
         >
-          {score.toFixed(1)}/10
+          <span className="score-value">
+            {score.toFixed(1)}/10
+          </span>
         </div>
       </div>
     </div>
   );
-  
+
   return (
-    <div className="interview-review-container">
-      <Header onBack={onBack}/>
-      <div className="interview-review-content">
-        <h2>Interview Review</h2>
-        {hasEmotionData && <EmotionStats logData={emotionData} />}
-        
-        <div className="overall-score">
-          <h3>Overall Score: <span className="score">{overall_score.toFixed(1)}/10</span></h3>
+    <div className="review-wrapper">
+      <Header onBack={onBack} />
+
+      {/* TITLE */}
+      <h2 className="review-title">Interview Review</h2>
+
+      {/* OVERALL SCORE – CENTER */}
+      <div className="overall-score-card">
+        <div className="overall-label">Overall Score</div>
+
+        <div className="overall-value">
+          {overall_score.toFixed(1)}/10
         </div>
-        
-        <div className="scores-section">
-          <h3>Detailed Scores</h3>
-          {Object.entries(detailed_scores).map(([key, score]) => (
-            renderScoreBar(score, key.split('_').map(word => 
-              word.charAt(0).toUpperCase() + word.slice(1)
-            ).join(' '))
-          ))}
+      </div>
+
+      {/* TWO COLUMN LAYOUT */}
+      <div className="review-columns">
+
+        {/* LEFT — DETAILED SCORES */}
+        <div className="left-column">
+          <div className="review-card">
+            <h3 className="section-title">Detailed Scores</h3>
+
+            <div className="scores-grid">
+              {Object.entries(detailed_scores).map(([key, score]) =>
+                renderScoreBar(
+                  score,
+                  key
+                    .split("_")
+                    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+                    .join(" ")
+                )
+              )}
+            </div>
+          </div>
         </div>
-        
-        <div className="analysis-section">
-          <h3>Strengths</h3>
-          <ul className="strengths-list">
-            {strengths.map((strength, index) => (
-              <li key={index} className="strength-item">
-                <span className="strength-icon">✓</span>
-                {strength}
-              </li>
-            ))}
-          </ul>
-          
-          {areas_for_improvement.length > 0 && (
-            <>
-              <h3>Areas for Improvement</h3>
-              <ul className="improvements-list">
-                {areas_for_improvement.map((item, index) => (
-                  <li key={index} className="improvement-item">
-                    <span className="improvement-icon">•</span>
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </>
-          )}
-          
+
+        {/* RIGHT — STRENGTHS + IMPROVEMENTS */}
+        <div className="right-column">
+          <div className="review-card">
+            <h3 className="section-title">Strengths</h3>
+
+            <ul className="list strengths-list">
+              {strengths.map((item, i) => (
+                <li key={i} className="list-item strength-item">
+                  ✓ {item}
+                </li>
+              ))}
+            </ul>
+
+            {areas_for_improvement.length > 0 && (
+              <>
+                <h3 className="section-title">Areas for Improvement</h3>
+
+                <ul className="list improvements-list">
+                  {areas_for_improvement.map((item, i) => (
+                    <li key={i} className="list-item improvement-item">
+                      • {item}
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </div>
+
           {detailed_summary && (
-            <div className="detailed-summary">
-              <h3>Detailed Feedback</h3>
-              <div className="markdown-content">
+            <div className="review-card">
+              <h3 className="section-title">Detailed Feedback</h3>
+              <div className="markdown-body">
                 <ReactMarkdown>{detailed_summary}</ReactMarkdown>
               </div>
             </div>
@@ -1134,7 +1201,6 @@ function InterviewReview({ analysis, onBack, emotionData = [] }) {
     </div>
   );
 }
-
 
 function Interview({ question, onInterviewFinish, onBack }) {
   const videoRef = useRef(null);
