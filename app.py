@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify, send_file, Response, render_template_string
 from flask_cors import CORS
 from dotenv import load_dotenv
 from analyzer import analyze_code_with_gemini
@@ -10,11 +10,15 @@ import json
 import requests
 import traceback
 import mimetypes
+import cv2
+import numpy as np
 from pydub import AudioSegment
 from pydub.silence import split_on_silence
 from pydub.playback import play
 import google.generativeai as genai
 from datetime import datetime
+import threading
+from typing import Dict, Optional
 
 # Load environment variables
 load_dotenv(dotenv_path='app.env')
@@ -58,7 +62,174 @@ def log_conversation(speaker, text):
 # Configure Gemini
 genai.configure(api_key=GEMINI_API_KEY)
 
+class HealthTracker:
+    def __init__(self, camera_index: int = 0, update_interval: float = 2.0):
+        try:
+            from emotiefflib import HSEmotionDetector
+            self.detector = HSEmotionDetector()
+            self.emotion_detection_available = True
+        except ImportError:
+            print("EmotiEffLib not found. Using mock emotion detection.")
+            self.emotion_detection_available = False
+            
+        # Initialize video capture
+        self.cap = cv2.VideoCapture(camera_index)
+        if not self.cap.isOpened():
+            print("Warning: Could not open camera. Health tracking will be limited.")
+            
+        # Tracking state
+        self.last_update = 0
+        self.update_interval = update_interval
+        self.emotion_history = []
+        self.engagement_scores = []
+        self.session_start = datetime.now()
+        self.latest_data = {}
+        self.running = False
+        self.thread = None
+        
+        # Engagement weights
+        self.engagement_weights = {
+            'happy': 0.9,
+            'neutral': 0.7,
+            'surprise': 0.8,
+            'sad': 0.3,
+            'angry': 0.2,
+            'fear': 0.1,
+            'disgust': 0.1
+        }
+    
+    def get_emotion(self, frame: np.ndarray) -> Dict:
+        if not self.emotion_detection_available:
+            return {'happy': 0.5, 'neutral': 0.3, 'sad': 0.2}
+            
+        try:
+            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            results = self.detector.predict_emotions([rgb_frame])
+            return results[0] if results else {}
+        except Exception as e:
+            print(f"Error detecting emotions: {e}")
+            return {}
+    
+    def calculate_engagement(self, emotions: Dict) -> float:
+        if not emotions:
+            return 0.0
+            
+        engagement = 0.0
+        total_weight = 0.0
+        
+        for emotion, prob in emotions.items():
+            weight = self.engagement_weights.get(emotion.lower(), 0.5)
+            engagement += prob * weight
+            total_weight += weight
+            
+        return min(max(engagement / max(total_weight, 0.001), 0.0), 1.0)
+    
+    def get_annotated_frame(self):
+        if not self.cap or not self.cap.isOpened():
+            return False, None
+            
+        ret, frame = self.cap.read()
+        if not ret:
+            return False, None
+            
+        emotions = self.get_emotion(frame)
+        
+        if not emotions:
+            return True, frame
+        
+        # Draw emotion information on the frame
+        height, width = frame.shape[:2]
+        
+        # Draw a semi-transparent background for the text
+        overlay = frame.copy()
+        cv2.rectangle(overlay, (10, 10), (300, 100 + (len(emotions) * 30)), (0, 0, 0), -1)
+        cv2.addWeighted(overlay, 0.7, frame, 0.3, 0, frame)
+        
+        # Draw emotion probabilities
+        y = 40
+        cv2.putText(frame, "Emotion Detection:", (20, y), 
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+        
+        for emotion, prob in sorted(emotions.items(), key=lambda x: -x[1]):
+            y += 30
+            text = f"{emotion}: {prob:.2f}"
+            cv2.putText(frame, text, (20, y), 
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 1)
+        
+        # Calculate and draw engagement score
+        engagement = self.calculate_engagement(emotions)
+        engagement_text = f"Engagement: {engagement:.2f}"
+        cv2.putText(frame, engagement_text, (20, y + 40),
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+        
+        # Update latest data
+        self.latest_data = {
+            'timestamp': datetime.now().isoformat(),
+            'emotions': emotions,
+            'engagement': engagement,
+            'dominant_emotion': max(emotions.items(), key=lambda x: x[1])[0] if emotions else 'unknown'
+        }
+        
+        # Keep history limited
+        self.emotion_history.append(self.latest_data)
+        if len(self.emotion_history) > 100:
+            self.emotion_history.pop(0)
+            
+        self.engagement_scores.append(engagement)
+        if len(self.engagement_scores) > 100:
+            self.engagement_scores.pop(0)
+        
+        return True, frame
+    
+    def get_summary(self) -> Dict:
+        if not self.emotion_history:
+            return {}
+            
+        return {
+            'session_start': self.session_start.isoformat(),
+            'session_duration_seconds': (datetime.now() - self.session_start).total_seconds(),
+            'total_updates': len(self.emotion_history),
+            'average_engagement': float(np.mean(self.engagement_scores)) if self.engagement_scores else 0,
+            'recent_emotions': [e['emotions'] for e in self.emotion_history[-10:]],
+            'recent_engagement': [float(e) for e in self.engagement_scores[-10:]]
+        }
+    
+    def start(self):
+        if self.running or not self.cap.isOpened():
+            return False
+            
+        self.running = True
+        self.thread = threading.Thread(target=self._update_loop, daemon=True)
+        self.thread.start()
+        return True
+    
+    def stop(self):
+        self.running = False
+        if self.thread:
+            self.thread.join(timeout=2.0)
+            self.thread = None
+    
+    def _update_loop(self):
+        while self.running:
+            try:
+                self.get_annotated_frame()
+                time.sleep(0.1)
+            except Exception as e:
+                print(f"Error in update loop: {e}")
+                time.sleep(1)
+    
+    def release(self):
+        self.stop()
+        if hasattr(self, 'cap') and self.cap.isOpened():
+            self.cap.release()
+
+# Initialize Flask app
 app = Flask(__name__)
+CORS(app)
+
+# Initialize health tracker
+tracker = HealthTracker()
+tracker.start()  # Start tracking automatically
 CORS(app)
 
 def analyze_code_with_gemini(code, question):
@@ -760,6 +931,222 @@ def submit_interview():
             'status': 'error',
             'message': str(e)
         }), 500
+
+# Health Tracker Routes
+@app.route('/api/health/status')
+def health_status():
+    """Get current health status."""
+    return jsonify({
+        'status': 'success',
+        'data': tracker.latest_data if hasattr(tracker, 'latest_data') else {}
+    })
+
+@app.route('/api/health/summary')
+def health_summary():
+    """Get session summary."""
+    return jsonify({
+        'status': 'success',
+        'data': tracker.get_summary() if hasattr(tracker, 'get_summary') else {}
+    })
+
+def generate_frames():
+    """Generate camera frames with emotion detection overlay."""
+    while True:
+        if not hasattr(tracker, 'get_annotated_frame'):
+            time.sleep(1)
+            continue
+            
+        success, frame = tracker.get_annotated_frame()
+        if not success:
+            time.sleep(0.1)
+            continue
+            
+        # Encode the frame in JPEG format
+        ret, buffer = cv2.imencode('.jpg', frame)
+        if not ret:
+            continue
+            
+        # Convert to bytes and yield for streaming
+        frame = buffer.tobytes()
+        yield (b'--frame\r\n'
+               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+
+@app.route('/api/health/video_feed')
+def video_feed():
+    """Video streaming route. Put this in the src attribute of an img tag."""
+    return Response(generate_frames(),
+                   mimetype='multipart/x-mixed-replace; boundary=frame')
+
+@app.route('/health-monitor')
+def health_monitor():
+    """Simple HTML page to monitor health metrics."""
+    return """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Interview Health Monitor</title>
+        <style>
+            body { 
+                font-family: Arial, sans-serif;
+                margin: 0;
+                padding: 20px;
+                background: #f5f5f5;
+            }
+            .container { 
+                max-width: 1200px;
+                margin: 0 auto;
+                display: grid;
+                grid-template-columns: 2fr 1fr;
+                gap: 20px;
+            }
+            .video-container {
+                background: #000;
+                border-radius: 8px;
+                overflow: hidden;
+            }
+            #videoFeed {
+                width: 100%;
+                display: block;
+            }
+            .metrics {
+                background: white;
+                padding: 20px;
+                border-radius: 8px;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+            .metric {
+                margin-bottom: 15px;
+                padding-bottom: 15px;
+                border-bottom: 1px solid #eee;
+            }
+            .metric h3 {
+                margin-top: 0;
+                color: #333;
+            }
+            .metric-value {
+                font-size: 24px;
+                font-weight: bold;
+                color: #2c3e50;
+            }
+            .engagement-bar {
+                height: 20px;
+                background: #ecf0f1;
+                border-radius: 10px;
+                margin-top: 10px;
+                overflow: hidden;
+            }
+            .engagement-level {
+                height: 100%;
+                background: #3498db;
+                width: 0%;
+                transition: width 0.5s ease;
+            }
+            .emotion-list {
+                margin-top: 10px;
+            }
+            .emotion-item {
+                display: flex;
+                justify-content: space-between;
+                margin-bottom: 5px;
+            }
+            .emotion-name {
+                flex: 1;
+            }
+            .emotion-value {
+                width: 60px;
+                text-align: right;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="video-container">
+                <img id="videoFeed" src="/api/health/video_feed">
+            </div>
+            <div class="metrics">
+                <div class="metric">
+                    <h3>Engagement Level</h3>
+                    <div class="metric-value" id="engagement">0.00</div>
+                    <div class="engagement-bar">
+                        <div class="engagement-level" id="engagementBar"></div>
+                    </div>
+                </div>
+                <div class="metric">
+                    <h3>Dominant Emotion</h3>
+                    <div class="metric-value" id="dominantEmotion">-</div>
+                </div>
+                <div class="metric">
+                    <h3>Emotion Breakdown</h3>
+                    <div class="emotion-list" id="emotionList">
+                        <div class="emotion-item">
+                            <span class="emotion-name">Loading...</span>
+                            <span class="emotion-value">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            // Update metrics in real-time
+            function updateMetrics() {
+                fetch('/api/health/status')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.data) {
+                            // Update engagement
+                            const engagement = (data.data.engagement || 0).toFixed(2);
+                            document.getElementById('engagement').textContent = engagement;
+                            document.getElementById('engagementBar').style.width = `${engagement * 100}%`;
+                            
+                            // Update dominant emotion
+                            document.getElementById('dominantEmotion').textContent = 
+                                data.data.dominant_emotion || '-';
+                            
+                            // Update emotion list
+                            const emotions = data.data.emotions || {};
+                            const emotionList = document.getElementById('emotionList');
+                            
+                            if (Object.keys(emotions).length > 0) {
+                                emotionList.innerHTML = '';
+                                
+                                // Sort emotions by value (highest first)
+                                const sortedEmotions = Object.entries(emotions)
+                                    .sort((a, b) => b[1] - a[1]);
+                                
+                                sortedEmotions.forEach(([emotion, value]) => {
+                                    const item = document.createElement('div');
+                                    item.className = 'emotion-item';
+                                    item.innerHTML = `
+                                        <span class="emotion-name">${emotion}</span>
+                                        <span class="emotion-value">${(value * 100).toFixed(1)}%</span>
+                                    `;
+                                    emotionList.appendChild(item);
+                                });
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching health data:', error);
+                    });
+            }
+            
+            // Update metrics every second
+            setInterval(updateMetrics, 1000);
+            updateMetrics();
+            
+            // Auto-reconnect if video feed is lost
+            const videoFeed = document.getElementById('videoFeed');
+            videoFeed.onerror = function() {
+                console.log('Video feed error, reconnecting...');
+                setTimeout(() => {
+                    videoFeed.src = '/api/health/video_feed?' + new Date().getTime();
+                }, 1000);
+            };
+        </script>
+    </body>
+    </html>
+    """
 
 if __name__ == '__main__':
     # Ensure upload directory exists

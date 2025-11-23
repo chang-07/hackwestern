@@ -1,12 +1,13 @@
-[2025-11-22 16:52:37] User: Uh my name is Chang it's nice to meet you
+[2025-11-22 18:00:37] User: My name is Chen
 
-[2025-11-22 16:52:38] AI: Hi Chang, nice to meet you too. To start, can you describe your approach to finding the median of two sorted arrays, and what the time complexity of that approach would be?
-
-
-[2025-11-22 16:52:58] User: Um here's my answer right here do you think this looks like this makes sense or do you think there's something off about it
-
-[2025-11-22 16:52:59] AI: This code is functionally correct, but the `sorted(nums1 + nums2)` operation has a time complexity of O(m+n log(m+n)), where m and n are the lengths of the input arrays. Can you think of a way to achieve the same result with a better time complexity, perhaps closer to O(log(min(m, n)))?
+[2025-11-22 18:00:38] AI: Okay, Chen, nice to meet you. Let's start with your implementation of the Longest Substring Without Repeating Characters. Currently, there's no code provided. Could you please share your code so we can discuss your approach?
 
 
-[2025-11-22 16:53:08] System: Interview analysis completed. Overall score: 3.5/10
+[2025-11-22 18:18:11] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 18:18:12] TTS Output: Generated audio: response_chunk_0.mp3 (132120 bytes)
+
+[2025-11-22 18:20:58] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 18:20:58] TTS Output: Generated audio: response_chunk_0.mp3 (132956 bytes)
 
