@@ -2,7 +2,7 @@ flask
 flask-cors
 python-dotenv
 requests
-pydub==0.25.1
-importlib-metadata==6.8.0
-google-generativeai==0.4.1
-protobuf<5
+opencv-python
+numpy
+pydub
+google-generativeai

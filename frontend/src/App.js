@@ -713,19 +713,34 @@ const questions = [
   }
 ];
 
-function stopAllAudio() {
+function stopAllAudio(extra = {}) {
+  const {
+    responseAudioRef,
+  } = extra;
+
   try {
-    // Stop all playing HTML audio elements
+    // Stop all playing HTML audio elements in the DOM
     const audios = document.querySelectorAll("audio");
     audios.forEach(a => {
-      a.pause();
-      a.currentTime = 0;
+      try {
+        a.pause();
+        a.currentTime = 0;
+      } catch {}
     });
 
-    // Stop Web Speech / TTS if you're using it
+    // Stop Web Speech / TTS
     if (window.speechSynthesis) {
-      window.speechSynthesis.cancel();
+      try { window.speechSynthesis.cancel(); } catch {}
     }
+
+    // Stop ElevenLabs Audio created with new Audio()
+    if (responseAudioRef?.current) {
+      try {
+        responseAudioRef.current.pause();
+        responseAudioRef.current.currentTime = 0;
+      } catch {}
+    }
+
   } catch (e) {
     console.log("stopAllAudio error:", e);
   }
@@ -764,6 +779,7 @@ function App() {
   };
 
   const handleBack = () => {
+      stopAllAudio();
       setCurrentView('questionSelector');
   };
 
@@ -1005,8 +1021,9 @@ function ProblemDescription({ question }) {
   );
 }
 
-function InterviewReview({ analysis, emotionData = [], onBack }) {
+function InterviewReview({ analysis, onBack, emotionData = [] }) {
   // Check if analysis is in the new format (object with analysis data)
+  stopAllAudio();
   const isNewFormat = analysis && typeof analysis === 'object' && 'overall_score' in analysis;
   
   // For backward compatibility with old string format
@@ -1017,8 +1034,6 @@ function InterviewReview({ analysis, emotionData = [], onBack }) {
       
     return (
       <div className="interview-review-container">
-      <Header onBack={onBack}/>
-        <div className="interview-review-content">
           <h2>Interview Review</h2>
           {emotionData.length > 0 && <EmotionStats logData={emotionData} />}
           <div className="analysis-section">
@@ -1027,7 +1042,6 @@ function InterviewReview({ analysis, emotionData = [], onBack }) {
               <ReactMarkdown>{cleanAnalysis}</ReactMarkdown>
             </div>
           </div>
-        </div>
       </div>
     );
   }
@@ -1066,12 +1080,6 @@ function InterviewReview({ analysis, emotionData = [], onBack }) {
     <div className="interview-review-container">
       <Header onBack={onBack}/>
       <div className="interview-review-content">
-        <button 
-          onClick={onBack}
-          className="back-to-problems-btn"
-        >
-          ← Back to Problems
-        </button>
         <h2>Interview Review</h2>
         {hasEmotionData && <EmotionStats logData={emotionData} />}
         
@@ -1137,7 +1145,7 @@ function Interview({ question, onInterviewFinish, onBack }) {
   const [fontSize, setFontSize] = useState(20); // Default font size
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [interviewStarted, setInterviewStarted] = useState(false);
-  
+
   // Audio recording state
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -1763,7 +1771,7 @@ function Interview({ question, onInterviewFinish, onBack }) {
 
   return (
     <div className="interview-wrapper" ref={wrapperRef}>
-      <Header>
+      <Header onBack={onBack}>
           <button 
             onClick={onBack}
             className="back-button"

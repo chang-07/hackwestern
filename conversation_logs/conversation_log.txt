@@ -1,0 +1,156 @@
+[2025-11-22 22:48:53] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 22:48:55] TTS Output: Generated audio: output.mp3 (127522 bytes)
+
+[2025-11-22 22:48:59] System: Interview analysis completed. Overall score: 0.0/10
+
+[2025-11-22 22:49:13] System: Interview analysis completed. Overall score: 0.0/10
+
+[2025-11-22 22:49:13] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 22:49:15] TTS Output: Generated audio: output.mp3 (134209 bytes)
+
+[2025-11-22 22:49:26] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 22:49:28] System: Interview analysis completed. Overall score: 0.0/10
+
+[2025-11-22 22:49:28] TTS Output: Generated audio: output.mp3 (127104 bytes)
+
+[2025-11-22 22:50:31] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 22:50:33] TTS Output: Generated audio: output.mp3 (126268 bytes)
+
+[2025-11-22 23:12:30] System: Interview analysis completed. Overall score: 0.0/10
+
+[2025-11-22 23:12:34] System: Interview analysis completed. Overall score: 0.0/10
+
+[2025-11-22 23:12:34] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 23:12:36] TTS Output: Generated audio: output.mp3 (120417 bytes)
+
+[2025-11-22 23:12:39] System: Interview analysis completed. Overall score: 0.0/10
+
+[2025-11-22 23:12:39] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 23:12:41] TTS Output: Generated audio: output.mp3 (127522 bytes)
+
+[2025-11-22 23:13:50] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 23:13:52] TTS Output: Generated audio: output.mp3 (127522 bytes)
+
+[2025-11-22 23:13:53] System: Interview analysis completed. Overall score: 0.0/10
+
+[2025-11-22 23:14:25] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 23:14:27] TTS Output: Generated audio: output.mp3 (132120 bytes)
+
+[2025-11-22 23:14:28] System: Interview analysis completed. Overall score: 0.0/10
+
+[2025-11-22 23:16:43] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 23:16:44] TTS Output: Generated audio: output.mp3 (130030 bytes)
+
+[2025-11-22 23:16:45] System: Interview analysis completed. Overall score: 0.0/10
+
+[2025-11-22 23:17:47] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 23:17:49] TTS Output: Generated audio: output.mp3 (132120 bytes)
+
+[2025-11-22 23:17:54] System: Interview analysis completed. Overall score: 0.0/10
+
+[2025-11-22 23:19:02] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 23:19:04] TTS Output: Generated audio: output.mp3 (129194 bytes)
+
+[2025-11-22 23:25:46] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 23:25:48] TTS Output: Generated audio: output.mp3 (122507 bytes)
+
+[2025-11-22 23:25:52] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 23:25:53] System: Interview analysis completed. Overall score: 0.0/10
+
+[2025-11-22 23:25:54] TTS Output: Generated audio: output.mp3 (124596 bytes)
+
+[2025-11-22 23:28:00] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 23:28:01] TTS Output: Generated audio: output.mp3 (125432 bytes)
+
+[2025-11-22 23:30:18] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 23:30:20] TTS Output: Generated audio: output.mp3 (130030 bytes)
+
+[2025-11-22 23:30:22] System: Interview analysis completed. Overall score: 0.0/10
+
+[2025-11-22 23:31:43] System: Interview analysis completed. Overall score: 0.0/10
+
+[2025-11-22 23:31:44] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 23:31:46] TTS Output: Generated audio: output.mp3 (130030 bytes)
+
+[2025-11-22 23:33:17] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 23:33:19] TTS Output: Generated audio: output.mp3 (128358 bytes)
+
+[2025-11-22 23:33:19] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 23:33:20] System: Interview analysis completed. Overall score: 0.0/10
+
+[2025-11-22 23:33:21] TTS Output: Generated audio: output.mp3 (123342 bytes)
+
+[2025-11-22 23:33:29] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 23:33:31] TTS Output: Generated audio: output.mp3 (127522 bytes)
+
+[2025-11-22 23:33:32] System: Interview analysis completed. Overall score: 0.0/10
+
+[2025-11-22 23:35:07] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 23:35:07] System: Interview analysis completed. Overall score: 0.0/10
+
+[2025-11-22 23:35:08] TTS Output: Generated audio: output.mp3 (124596 bytes)
+
+[2025-11-22 23:36:02] System: Interview analysis completed. Overall score: 0.0/10
+
+[2025-11-22 23:36:02] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 23:36:04] TTS Output: Generated audio: output.mp3 (123342 bytes)
+
+[2025-11-22 23:36:26] System: Interview analysis completed. Overall score: 0.0/10
+
+[2025-11-22 23:37:16] System: Interview analysis completed. Overall score: 0.0/10
+
+[2025-11-22 23:37:17] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 23:37:18] TTS Output: Generated audio: output.mp3 (124178 bytes)
+
+[2025-11-22 23:37:33] System: Interview analysis completed. Overall score: 0.0/10
+
+[2025-11-22 23:37:33] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 23:37:35] TTS Output: Generated audio: output.mp3 (128358 bytes)
+
+[2025-11-22 23:37:40] System: Interview analysis completed. Overall score: 0.0/10
+
+[2025-11-22 23:37:41] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 23:37:42] TTS Output: Generated audio: output.mp3 (128358 bytes)
+
+[2025-11-22 23:38:01] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 23:38:01] System: Interview analysis completed. Overall score: 0.0/10
+
+[2025-11-22 23:38:02] TTS Output: Generated audio: output.mp3 (134209 bytes)
+
+[2025-11-22 23:39:39] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 23:39:41] TTS Output: Generated audio: output.mp3 (127104 bytes)
+
+[2025-11-22 23:40:15] System: Interview analysis completed. Overall score: 0.0/10
+
+[2025-11-22 23:40:23] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 23:40:24] TTS Output: Generated audio: output.mp3 (130866 bytes)
+
+[2025-11-22 23:40:29] System: Interview analysis completed. Overall score: 0.0/10
+
