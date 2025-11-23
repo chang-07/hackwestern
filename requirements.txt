@@ -1,4 +1,8 @@
-Flask
-python-dotenv
-google-generativeai
+flask
 flask-cors
+python-dotenv
+requests
+opencv-python
+numpy
+pydub
+google-generativeai

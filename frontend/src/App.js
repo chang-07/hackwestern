@@ -4,6 +4,7 @@ import Editor from '@monaco-editor/react';
 import VoiceChat from './components/VoiceChat';
 import SimpleVoiceChat from './components/SimpleVoiceChat';
 import ReactMarkdown from 'react-markdown';
+import EmotionStats from './components/EmotionStats';
 import './App.css';
 
 const questions = [
@@ -712,11 +713,55 @@ const questions = [
   }
 ];
 
+function stopAllAudio(extra = {}) {
+  const {
+    responseAudioRef,
+  } = extra;
+
+  try {
+    // Stop all playing HTML audio elements in the DOM
+    const audios = document.querySelectorAll("audio");
+    audios.forEach(a => {
+      try {
+        a.pause();
+        a.currentTime = 0;
+      } catch {}
+    });
+
+    // Stop Web Speech / TTS
+    if (window.speechSynthesis) {
+      try { window.speechSynthesis.cancel(); } catch {}
+    }
+
+    // Stop ElevenLabs Audio created with new Audio()
+    if (responseAudioRef?.current) {
+      try {
+        responseAudioRef.current.pause();
+        responseAudioRef.current.currentTime = 0;
+      } catch {}
+    }
+
+  } catch (e) {
+    console.log("stopAllAudio error:", e);
+  }
+}
+
 function App() {
   const [currentView, setCurrentView] = useState('login');
   const [selectedQuestion, setSelectedQuestion] = useState(null);
   const [analysisData, setAnalysisData] = useState(null);
+  const [emotionData, setEmotionData] = useState([]);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (currentView !== "interview") {
+      stopAllAudio();
+    }
+  }, [currentView]);
+
+  const handleBackToProblems = () => {
+    setCurrentView('questionSelector');
+  };
 
   const handleLogin = () => {
     setCurrentView('questionSelector');
@@ -727,15 +772,15 @@ function App() {
     setCurrentView('interview');
   };
 
-  const handleInterviewFinish = (data) => {
+  const handleInterviewFinish = (data, emotionLogs = []) => {
     setAnalysisData(data);
+    setEmotionData(emotionLogs);
     setCurrentView('interviewReview');
   };
 
   const handleBack = () => {
-    if (window.confirm('Are you sure you want to leave the interview? Your progress will not be saved.')) {
+      stopAllAudio();
       setCurrentView('questionSelector');
-    }
   };
 
   return (
@@ -751,7 +796,13 @@ function App() {
           onBack={handleBack}
         />
       )}
-      {currentView === 'interviewReview' && <InterviewReview analysis={analysisData} />}
+      {currentView === 'interviewReview' && (
+        <InterviewReview 
+          analysis={analysisData} 
+          emotionData={emotionData}
+          onBack={handleBackToProblems}
+        />
+      )}
     </div>
   );
 }
@@ -760,11 +811,14 @@ function Login({ onLogin }) {
   return (
     <div className="login-container">
       <div className="login-box">
-        <h2>Log In</h2>
-        <input type="email" placeholder="Email" />
-        <input type="password" placeholder="Password" />
-        <button onClick={onLogin}>Log In</button>
-        <p className="signup-text">Don't have an account? <a href="#">Sign up</a></p>
+        <h2 className="login-title">Welcome back</h2>
+        <p className="login-subtitle">Sign in to start your interview session</p>
+        <input type="email" placeholder="Email" className="input-field" />
+        <input type="password" placeholder="Password" className="input-field" />
+        <button onClick={onLogin} className="primary-button">Log In</button>
+        <p className="signup-text">
+          Don't have an account? <a href="#" className="link">Sign up</a>
+        </p>
       </div>
     </div>
   );
@@ -808,7 +862,7 @@ function QuestionSelector({ onQuestionSelect }) {
   return (
     <div className="question-selector-container">
       <div className="question-header">
-        <h2>Interview Questions</h2>
+        <h2 className="page-title">Interview Questions</h2>
         <div className="question-filters">
           <input 
             type="text" 
@@ -861,7 +915,7 @@ function QuestionSelector({ onQuestionSelect }) {
               <div className="table-cell">
                 <span 
                   className="difficulty-tag"
-                  style={{ backgroundColor: getDifficultyColor(q.difficulty) }}
+                  data-difficulty={q.difficulty}
                 >
                   {q.difficulty}
                 </span>
@@ -879,11 +933,39 @@ function QuestionSelector({ onQuestionSelect }) {
   );
 }
 
-function Header({ children }) {
+function Header({ onBack }) {
   return (
-    <header className="app-header" style={{ position: 'relative' }}>
-      {children}
-      <h1 style={{ margin: 0 }}>InterviewerMock</h1>
+    <header className="app-header">
+      <div className="app-header-inner">
+        <button
+          className="back-button"
+          onClick={onBack}          // ✅ just call the prop
+          title="Exit Interview"
+        >          
+        <svg
+            width="25"
+            height="25"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="back-icon"
+          >
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
+        </button>
+
+        {/* CENTER — Logo */}
+        <div className="app-logo">
+          <div className="logo-mark">🍲</div>
+          <span className="logo-text">P.O.T.S.</span>
+        </div>
+
+        {/* RIGHT — Spacer */}
+        <div className="header-spacer"></div>
+      </div>
     </header>
   );
 }
@@ -939,8 +1021,9 @@ function ProblemDescription({ question }) {
   );
 }
 
-function InterviewReview({ analysis }) {
+function InterviewReview({ analysis, onBack, emotionData = [] }) {
   // Check if analysis is in the new format (object with analysis data)
+  stopAllAudio();
   const isNewFormat = analysis && typeof analysis === 'object' && 'overall_score' in analysis;
   
   // For backward compatibility with old string format
@@ -951,16 +1034,14 @@ function InterviewReview({ analysis }) {
       
     return (
       <div className="interview-review-container">
-        <Header />
-        <div className="interview-review-content">
           <h2>Interview Review</h2>
+          {emotionData.length > 0 && <EmotionStats logData={emotionData} />}
           <div className="analysis-section">
             <h3>Code Analysis</h3>
             <div className="markdown-content">
               <ReactMarkdown>{cleanAnalysis}</ReactMarkdown>
             </div>
           </div>
-        </div>
       </div>
     );
   }
@@ -973,6 +1054,9 @@ function InterviewReview({ analysis }) {
     areas_for_improvement = [],
     detailed_summary = ''
   } = analysis;
+  
+  // Add emotion data to the review if available
+  const hasEmotionData = emotionData && emotionData.length > 0;
   
   // Function to render a score bar
   const renderScoreBar = (score, label) => (
@@ -994,9 +1078,10 @@ function InterviewReview({ analysis }) {
   
   return (
     <div className="interview-review-container">
-      <Header />
+      <Header onBack={onBack}/>
       <div className="interview-review-content">
         <h2>Interview Review</h2>
+        {hasEmotionData && <EmotionStats logData={emotionData} />}
         
         <div className="overall-score">
           <h3>Overall Score: <span className="score">{overall_score.toFixed(1)}/10</span></h3>
@@ -1060,7 +1145,7 @@ function Interview({ question, onInterviewFinish, onBack }) {
   const [fontSize, setFontSize] = useState(20); // Default font size
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [interviewStarted, setInterviewStarted] = useState(false);
-  
+
   // Audio recording state
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -1071,10 +1156,32 @@ function Interview({ question, onInterviewFinish, onBack }) {
   const audioContextRef = useRef(null);
   const analyserRef = useRef(null);
   const animationFrameId = useRef(null);
+
+  const ttsAudioRef = useRef(null);        // for speak()
+  const responseAudioRef = useRef(null);   // for sendToElevenLabs()
   
   // Handle interview start when user is ready
-  const handleReady = () => {
-    setInterviewStarted(true);
+  const handleReady = async () => {
+    try {
+      // Start health tracking when interview starts
+      const response = await fetch('http://localhost:5008/start_problem', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        console.error('Failed to start health tracking');
+      } else {
+        console.log('Health tracking started');
+      }
+      
+      setInterviewStarted(true);
+    } catch (error) {
+      console.error('Error starting health tracking:', error);
+      setInterviewStarted(true); // Continue with interview even if health tracking fails
+    }
   };
 
   useEffect(() => {
@@ -1102,21 +1209,82 @@ function Interview({ question, onInterviewFinish, onBack }) {
     }
   }, [fontSize]);
 
+  // Set up camera and audio context on mount and clean up on unmount
   useEffect(() => {
-    const getCamera = async () => {
+    // Initialize camera
+    const startCamera = async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          video: { 
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+            facingMode: 'user' 
+          } 
+        });
+        
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
+          await videoRef.current.play();
         }
+        
+        // Store the stream for cleanup
+        const currentStream = stream;
+        
+        // Cleanup function
+        return () => {
+          if (currentStream) {
+            currentStream.getTracks().forEach(track => track.stop());
+          }
+          if (videoRef.current) {
+            videoRef.current.srcObject = null;
+          }
+        };
       } catch (err) {
-        console.error("Error accessing camera: ", err);
+        console.error('Error accessing camera:', err);
       }
     };
+    
+    // Start camera
+    const cleanupCamera = startCamera();
+    
+    // Return cleanup function
+    return async () => {
+      // Stop health tracking if component unmounts during interview
+      if (interviewStarted) {
+        try {
+          await fetch('http://localhost:5008/end_problem', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+          console.log('Health tracking stopped on unmount');
+        } catch (error) {
+          console.error('Error stopping health tracking on unmount:', error);
+        }
+      }
+      
+      // Clean up camera
+      if (cleanupCamera) {
+        cleanupCamera.then(cleanup => cleanup && cleanup());
+      }
+      
+      // Clean up audio context
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+      }
+      if (animationFrameId.current) {
+        cancelAnimationFrame(animationFrameId.current);
+      }
+    };
+  }, [interviewStarted]);
+  
+  // Set up audio context on mount
+  useEffect(() => {
+    initAudioContext();
+  }, [isPlaying, isRecording]); // Re-run when recording/playback state changes
 
-    getCamera();
-  }, []);
-
+  // Handle language selection
   const handleLanguageSelect = (language) => {
     setSelectedLanguage(language);
   };
@@ -1152,29 +1320,13 @@ function Interview({ question, onInterviewFinish, onBack }) {
     }
   };
   
-  // Set up audio context on mount and clean up on unmount
-  useEffect(() => {
-    initAudioContext();
-    
-    // Cleanup function
-    return () => {
-      if (animationFrameId.current) {
-        cancelAnimationFrame(animationFrameId.current);
-        animationFrameId.current = null;
-      }
-      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
-        audioContextRef.current.close();
-      }
-    };
-  }, [isPlaying, isRecording]); // Re-run when recording/playback state changes
-  
   // Function to save editor content to test.txt
   const saveEditorContent = async () => {
     try {
       console.log('Saving code to test.txt...');
       console.log('Code content:', code);
       
-      const response = await fetch('http://localhost:5008/save-code', {
+      const response = await fetch('http://127.0.0.1:5008/save-code', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1587,9 +1739,39 @@ function Interview({ question, onInterviewFinish, onBack }) {
     }
   };
 
+  // Handle interview finish
+  const handleFinish = async () => {
+    try {
+      // Stop health tracking when interview ends
+      const response = await fetch('http://localhost:5008/end_problem', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        console.error('Failed to stop health tracking');
+      } else {
+        console.log('Health tracking stopped');
+      }
+    } catch (error) {
+      console.error('Error stopping health tracking:', error);
+    }
+    
+    if (onInterviewFinish) {
+      onInterviewFinish({
+        question,
+        code,
+        language: selectedLanguage,
+        timestamp: new Date().toISOString()
+      });
+    }
+  };
+
   return (
     <div className="interview-wrapper" ref={wrapperRef}>
-      <Header>
+      <Header onBack={onBack}>
           <button 
             onClick={onBack}
             className="back-button"
@@ -1783,7 +1965,21 @@ function Interview({ question, onInterviewFinish, onBack }) {
           </div>
         </div>
         <div className="sidebar">
-          <video ref={videoRef} className="camera-view" autoPlay playsInline></video>
+          <div className="camera-container" style={{ position: 'relative', width: '100%', height: '240px', overflow: 'hidden', borderRadius: '8px', backgroundColor: '#1e1e1e' }}>
+            <video 
+              ref={videoRef} 
+              className="camera-view" 
+              autoPlay 
+              playsInline 
+              muted
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                transform: 'scaleX(-1)' // Mirror the video for a more natural feel
+              }}
+            />
+          </div>
           <LanguageSelector selectedLanguage={selectedLanguage} onLanguageSelect={handleLanguageSelect} />
           <ProblemDescription question={question} />
         </div>
