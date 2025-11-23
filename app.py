@@ -34,6 +34,9 @@ os.makedirs('conversation_logs', exist_ok=True)
 # Track if this is a new session
 session_started = False
 
+# Track if user is currently solving a problem
+is_solving_problem = False
+
 def log_conversation(speaker, text):
     """Log conversation to a single file with timestamp"""
     global session_started
@@ -62,30 +65,66 @@ def log_conversation(speaker, text):
 # Configure Gemini
 genai.configure(api_key=GEMINI_API_KEY)
 
+def run_gemini(prompt: str) -> str:
+    """Send a prompt to the Gemini model and return the response.
+    
+    Args:
+        prompt: The prompt to send to the model
+        
+    Returns:
+        The model's response as a string
+    """
+    try:
+        # Use the Gemini 2.5 Flash model (exact name from available models list)
+        model_name = 'models/gemini-2.5-flash'  # This is the exact name from the available models list
+        print(f"Using model: {model_name}")
+        
+        # Initialize the model
+        model = genai.GenerativeModel(model_name)
+        response = model.generate_content(prompt)
+        return response.text
+    except Exception as e:
+        print(f"Error in run_gemini: {str(e)}")
+        return "I'm sorry, I encountered an error processing your request."
+
 class HealthTracker:
     def __init__(self, camera_index: int = 0, update_interval: float = 2.0):
-        try:
-            from emotiefflib import HSEmotionDetector
-            self.detector = HSEmotionDetector()
-            self.emotion_detection_available = True
-        except ImportError:
-            print("EmotiEffLib not found. Using mock emotion detection.")
-            self.emotion_detection_available = False
-            
-        # Initialize video capture
-        self.cap = cv2.VideoCapture(camera_index)
-        if not self.cap.isOpened():
-            print("Warning: Could not open camera. Health tracking will be limited.")
-            
-        # Tracking state
-        self.last_update = 0
+        self.camera_index = camera_index
         self.update_interval = update_interval
+        self.detector = None
+        self.cap = None
+        self.emotion_detection_available = False
+        self.last_update = 0
         self.emotion_history = []
         self.engagement_scores = []
         self.session_start = datetime.now()
         self.latest_data = {}
         self.running = False
         self.thread = None
+        self.initialized = False
+    
+    def initialize(self):
+        """Initialize the detector and camera only when needed"""
+        if self.initialized:
+            return True
+            
+        try:
+            from emotiefflib import HSEmotionDetector
+            self.detector = HSEmotionDetector()
+            self.emotion_detection_available = True
+            print("Emotion detection initialized")
+        except ImportError:
+            print("EmotiEffLib not found. Using mock emotion detection.")
+            self.emotion_detection_available = False
+        
+        # Initialize video capture
+        self.cap = cv2.VideoCapture(self.camera_index)
+        if not self.cap.isOpened():
+            print("Warning: Could not open camera. Health tracking will be limited.")
+            return False
+            
+        self.initialized = True
+        return True
         
         # Engagement weights
         self.engagement_weights = {
@@ -195,19 +234,26 @@ class HealthTracker:
         }
     
     def start(self):
-        if self.running or not self.cap.isOpened():
+        """Start the background update thread."""
+        if not self.initialize():
+            print("Failed to initialize health tracker")
             return False
             
-        self.running = True
-        self.thread = threading.Thread(target=self._update_loop, daemon=True)
-        self.thread.start()
+        if not self.running:
+            self.running = True
+            self.thread = threading.Thread(target=self._update_loop)
+            self.thread.daemon = True
+            self.thread.start()
+            print("Health tracking started")
         return True
     
     def stop(self):
+        """Stop the background update thread."""
         self.running = False
-        if self.thread:
-            self.thread.join(timeout=2.0)
-            self.thread = None
+        if self.thread is not None:
+            self.thread.join(timeout=1.0)
+        print("Health tracking stopped")
+        self.thread = None
     
     def _update_loop(self):
         while self.running:
@@ -227,478 +273,71 @@ class HealthTracker:
 app = Flask(__name__)
 CORS(app)
 
-# Initialize health tracker
-tracker = HealthTracker()
-tracker.start()  # Start tracking automatically
-CORS(app)
+# Initialize health tracker (but don't start it yet)
+health_tracker = HealthTracker()
 
-def analyze_code_with_gemini(code, question):
-    """Analyze code using Gemini API with error handling and Markdown formatting."""
-    try:
-        # Initialize the Gemini model with a known working model
-        model = genai.GenerativeModel('gemini-2.0-flash')
-        
-        # Read the current content of test.txt
-        test_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'test.txt')
-        try:
-            with open(test_file_path, 'r') as f:
-                test_code = f.read()
-        except FileNotFoundError:
-            test_code = "No test file found"
-        
-        # Create a prompt for code analysis with Markdown formatting
-        prompt = f"""
-        You are analyzing a solution to the Two Sum problem. The user's current code is stored in test.txt and is shown below.
-        
-        ## Problem: Two Sum
-        Given an array of integers `nums` and an integer `target`, return the indices of the two numbers such that they add up to `target`.
-        
-        You may assume that each input would have exactly one solution, and you may not use the same element twice.
-        
-        ### Current Code in test.txt:
-        ```cpp
-        {test_code}
-        ```
-        
-        ### User's Question:
-        {question[0] if isinstance(question, (list, tuple)) else question}
-        
-        ## Code Analysis
-        
-        ### 1. Code Correctness
-        - [ ] Code compiles/runs without errors
-        - [ ] Correctly solves the Two Sum problem
-        - [ ] Handles edge cases (empty array, no solution, multiple solutions)
-        
-        ### 2. Time and Space Complexity
-        - **Time Complexity:** 
-        - **Space Complexity:**
-        
-        ### 3. Implementation Analysis
-        - [ ] Uses an optimal approach (O(n) time with hash map)
-        - [ ] Handles edge cases (negative numbers, zero, etc.)
-        - [ ] Properly returns the indices or appropriate result
-        
-        ### 4. Potential Issues
-        - [ ] Bugs found
-        - [ ] Edge cases not handled
-        - [ ] Potential improvements
-        
-        ### 5. Suggestions for Improvement
-        - 
-        ### 6. Final Verdict
-        
-        ---
-        *Analysis generated by Gemini AI for Two Sum problem*
-        """
-        
-        # Generate the analysis with error handling for the response format
-        try:
-            response = model.generate_content(prompt)
-            
-            # Extract the response text
-            if hasattr(response, 'text'):
-                result = response.text
-            elif hasattr(response, 'candidates') and response.candidates:
-                result = response.candidates[0].content.parts[0].text
-            elif hasattr(response, 'result'):
-                result = response.result
-            else:
-                result = str(response)
-            
-            # Ensure the response is properly formatted as Markdown
-            return f"```markdown\n{result}\n```"
-                
-        except Exception as gen_error:
-            error_msg = f"Error generating analysis: {str(gen_error)}"
-            return f"```markdown\n# Error\n{error_msg}\n```"
-            
-    except Exception as e:
-        error_msg = f"Error in analyze_code_with_gemini: {str(e)}"
-        print(error_msg)
-        import traceback
-        traceback.print_exc()
-        return f"```markdown\n# Error\n{error_msg}\n```"
+@app.route('/start_problem', methods=['POST'])
+def start_problem():
+    """Start health tracking when user starts a problem"""
+    global is_solving_problem
+    if not is_solving_problem:
+        is_solving_problem = True
+        if not health_tracker.running:
+            health_tracker.start()
+    return jsonify({"status": "started" if is_solving_problem else "error"})
 
-def get_file_mime_type(file_path):
-    """Get MIME type based on file signature"""
-    with open(file_path, 'rb') as f:
-        header = f.read(12)
-    
-    # Check for WebM (starts with \x1aE\xdf\xa3)
-    if len(header) >= 4 and header[0:4] == b'\x1aE\xdf\xa3':
-        return 'audio/webm'
-    # Check for WAV (starts with 'RIFF' and has 'WAVE' at offset 8)
-    elif len(header) >= 12 and header.startswith(b'RIFF') and header[8:12] == b'WAVE':
-        return 'audio/wav'
-    # Check for Ogg (starts with 'OggS')
-    elif len(header) >= 4 and header.startswith(b'OggS'):
-        return 'audio/ogg'
-    
-    print(f"Unknown file format. Header: {header.hex()}")
-    return 'audio/wav'  # Default to wav
+@app.route('/end_problem', methods=['POST'])
+def end_problem():
+    """Stop health tracking when user finishes a problem"""
+    global is_solving_problem
+    if is_solving_problem:
+        is_solving_problem = False
+        if health_tracker.running:
+            health_tracker.stop()
+    return jsonify({"status": "stopped" if not is_solving_problem else "error"})
 
 def speech_to_text(audio_path):
     """Convert speech to text using ElevenLabs API"""
-    print("\n=== Starting Speech-to-Text Conversion ===")
-    print(f"Audio file path: {audio_path}")
-    print(f"File exists: {os.path.exists(audio_path)}")
-    print(f"File size: {os.path.getsize(audio_path)} bytes")
-    
-    if not os.path.exists(audio_path):
-        print("Error: Audio file does not exist")
-        return ""
-        
-    if os.path.getsize(audio_path) < 1000:  # 1KB minimum size
-        print("Error: Audio file is too small")
-        return ""
-    
-    url = "https://api.elevenlabs.io/v1/speech-to-text"
-    headers = { 
-        "xi-api-key": ELEVENLABS_API_KEY,
-        "accept": "application/json"
-    }
-    
-    # Verify API key is set
-    if not ELEVENLABS_API_KEY or ELEVENLABS_API_KEY == "your-elevenlabs-api-key":
-        print("Error: ElevenLabs API key not properly configured")
-        return ""
-    
     try:
-        mime_type = get_file_mime_type(audio_path)
-        print(f"1. Detected MIME type: {mime_type}")
+        if not os.path.exists(audio_path):
+            print(f"Audio file not found: {audio_path}")
+            return None
+            
+        # Read the audio file
+        with open(audio_path, 'rb') as f:
+            audio_data = f.read()
+            
+        # Prepare the request
+        url = "https://api.elevenlabs.io/v1/speech-to-text"
         
-        # Map MIME type to file extension
-        ext_map = {
-            'audio/wav': 'wav',
-            'audio/webm': 'webm',
-            'audio/ogg': 'ogg'
+        # Set the model ID for speech-to-text
+        model_id = "scribe_v2"  # Using the latest available model
+        
+        # Prepare the request data as multipart form data
+        files = {
+            'model_id': (None, model_id, 'text/plain'),
+            'file': ('audio.wav', audio_data, 'audio/wav')
         }
         
-        file_extension = ext_map.get(mime_type, 'wav')
-        print(f"2. Using file extension: {file_extension}")
+        headers = {
+            "Accept": "application/json",
+            "xi-api-key": ELEVENLABS_API_KEY
+        }
         
-        with open(audio_path, "rb") as audio:
-            audio_data = audio.read()
-            print(f"3. Read {len(audio_data)} bytes of audio data")
-            
-            files = {
-                'file': (f'audio.{file_extension}', 
-                        audio_data, 
-                        mime_type)
-            }
-            
-            # Try different model IDs if needed
-            model_ids = ['scribe_v2', 'scribe_v1', 'whisper-1']
-            
-            for model_id in model_ids:
-                print(f"4. Trying model: {model_id}")
-                data = {'model_id': model_id}
-                
-                try:
-                    print("5. Sending request to ElevenLabs API...")
-                    resp = requests.post(url, headers=headers, files=files, data=data, timeout=30)
-                    print(f"6. Response status: {resp.status_code}")
-                    
-                    if resp.status_code == 200:
-                        result = resp.json().get("text", "").strip()
-                        print(f"7. Success! Transcribed text: {result}")
-                        return result
-                    else:
-                        print(f"8. Error with model {model_id}: {resp.status_code} - {resp.text}")
-                        
-                except Exception as e:
-                    print(f"9. Exception with model {model_id}: {str(e)}")
-                    continue
-            
-            print("10. All models failed. Last response:", resp.text if 'resp' in locals() else 'No response')
-            return ""
+        response = requests.post(url, headers=headers, files=files)
+        
+        if response.status_code == 200:
+            result = response.json()
+            return result.get('text', '').strip()
+        else:
+            print(f"Error in speech-to-text API: {response.status_code} - {response.text}")
+            return None
             
     except Exception as e:
         print(f"Error in speech_to_text: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        return ""
-
-def run_gemini(prompt):
-    """Generate text using Gemini API"""
-    if not prompt or not prompt.strip():
-        print("Error: Empty prompt provided for Gemini")
         return None
-        
-    # List of models to try in order of preference
-    models_to_try = [
-        "gemini-2.0-flash",  # Fallback to 2.0 if needed
-        "gemini-2.0-pro"     # Last resort
-    ]
-    
-    # First, list all available models to help with debugging
-    try:
-        available_models = [model.name for model in genai.list_models()]
-        print("Available models:", available_models)
-        
-        # Filter to only include text generation models that support generateContent
-        text_models = [m for m in available_models if 'generateContent' in m.supported_generation_methods]
-        print(f"Available text generation models: {text_models}")
-        
-        # If we found any text generation models, use those instead
-        if text_models:
-            models_to_try = [m.split('/')[-1] for m in text_models if 'gemini' in m.lower()]
-            print(f"Using available Gemini models: {models_to_try}")
-            
-    except Exception as e:
-        print(f"Error listing models: {str(e)}")
-        print("Will proceed with default model list")
-        
-    last_error = None
-    
-    for model_name in models_to_try:
-        full_model_name = f"models/{model_name}"
-        try:
-            print(f"Trying model: {full_model_name}")
-            model = genai.GenerativeModel(full_model_name)
-            
-            # Generate content with the correct parameters
-            response = model.generate_content(
-                f"You are a helpful AI assistant. The user said: {prompt}",
-                generation_config={
-                    "temperature": 0.7,
-                    "max_output_tokens": 200,
-                },
-            )
-            
-            if hasattr(response, 'text'):
-                return response.text
-            elif hasattr(response, 'candidates') and response.candidates:
-                return response.candidates[0].content.parts[0].text
-            else:
-                print(f"Unexpected response format from model {full_model_name}")
-                continue
-                
-        except Exception as e:
-            last_error = str(e)
-            print(f"Error with model {full_model_name}: {last_error}")
-            if "not found" in str(e).lower() or "not supported" in str(e).lower():
-                print(f"Model {full_model_name} not found or not supported, trying next...")
-                continue
-            print(f"Error details: {str(e)}")
-            continue
-    
-    # If we get here, all models failed
-    error_msg = f"All models failed. Last error: {last_error}"
-    print(error_msg)
-    return "I'm sorry, I'm having trouble processing your request right now. Please try again later."
 
-def split_text_into_chunks(text, max_length=300):
-    """Split text into chunks that are small enough for the TTS API"""
-    if len(text) <= max_length:
-        return [text]
-        
-    # Try to split at sentence boundaries
-    sentences = []
-    current_chunk = ""
-    
-    # Split into sentences while preserving punctuation
-    for sentence in re.split(r'(?<=[.!?])\s+', text):
-        if len(current_chunk) + len(sentence) + 1 <= max_length:
-            current_chunk += (" " + sentence).strip()
-        else:
-            if current_chunk:
-                sentences.append(current_chunk)
-            current_chunk = sentence
-    
-    if current_chunk:
-        sentences.append(current_chunk)
-        
-    return sentences
-
-def text_to_speech(text):
-    """Convert text to speech using ElevenLabs API"""
-    if not text or not text.strip():
-        print("Error: Empty text provided for TTS")
-        return None
-        
-    # Verify API key is set
-    if not ELEVENLABS_API_KEY or ELEVENLABS_API_KEY == "your-elevenlabs-api-key":
-        print("Error: ElevenLabs API key not properly configured")
-        return None
-        
-    url = f"https://api.elevenlabs.io/v1/text-to-speech/{VOICE_ID}"
-    headers = {
-        "xi-api-key": ELEVENLABS_API_KEY,
-        "Content-Type": "application/json",
-        "accept": "audio/mpeg"
-    }
-    
-    # Split text into chunks if it's too long
-    text_chunks = split_text_into_chunks(text)
-    output_files = []
-    
-    # Try different models
-    model_configs = [
-        {
-            "model_id": "eleven_turbo_v2",
-            "voice_settings": {
-                "stability": 0.5,
-                "similarity_boost": 0.5,
-                "style": 0.5,
-                "use_speaker_boost": True
-            }
-        },
-        {
-            "model_id": "eleven_monolingual_v1",
-            "voice_settings": {
-                "stability": 0.5,
-                "similarity_boost": 0.5
-            }
-        },
-        {
-            "model_id": "eleven_multilingual_v1",
-            "voice_settings": {
-                "stability": 0.5,
-                "similarity_boost": 0.5
-            }
-        }
-    ]
-
-    last_error = None
-    
-    for config in model_configs:
-        try:
-            print(f"Trying TTS with model: {config['model_id']}")
-            
-            # Process each chunk
-            for i, chunk in enumerate(text_chunks):
-                print(f"Processing chunk {i+1}/{len(text_chunks)}: {chunk[:50]}...")
-                
-                data = {
-                    "text": chunk,
-                    "model_id": config['model_id'],
-                    "voice_settings": config['voice_settings']
-                }
-                
-                # Increased timeout to 60 seconds
-                resp = requests.post(url, json=data, headers=headers, timeout=60)
-                resp.raise_for_status()
-                
-                chunk_file = f"response_chunk_{i}.mp3"
-                with open(chunk_file, "wb") as f:
-                    f.write(resp.content)
-                output_files.append(chunk_file)
-                
-                # Small delay between chunks to avoid rate limiting
-                if i < len(text_chunks) - 1:
-                    time.sleep(0.5)
-            
-            # Combine all chunks into a single file
-            if len(output_files) > 1:
-                combined = AudioSegment.empty()
-                for chunk_file in output_files:
-                    sound = AudioSegment.from_mp3(chunk_file)
-                    combined += sound
-                    # Add a small pause between chunks
-                    combined += AudioSegment.silent(duration=200)  # 200ms pause
-                
-                output_path = "response_combined.mp3"
-                combined.export(output_path, format="mp3")
-                
-                # Clean up chunk files
-                for chunk_file in output_files:
-                    try:
-                        os.remove(chunk_file)
-                    except:
-                        pass
-                
-                output_files = [output_path]
-            
-            output_path = output_files[0]
-            file_size = os.path.getsize(output_path)
-            print(f"TTS audio saved to {output_path} (size: {file_size} bytes)")
-            
-            # Verify the audio file is valid
-            if file_size < 1000:  # 1KB minimum size for audio
-                print("Warning: Generated audio file is too small, trying next model...")
-                os.remove(output_path)
-                continue
-                
-            return output_path
-            
-        except requests.exceptions.RequestException as e:
-            last_error = str(e)
-            print(f"Error with model {config['model_id']}: {last_error}")
-            if hasattr(e, 'response') and e.response is not None:
-                print(f"Response status: {e.response.status_code}")
-                print(f"Response body: {e.response.text}")
-            continue
-            
-    print(f"All TTS models failed. Last error: {last_error}")
-    return None
-
-@app.route('/')
-def hello_world():
-    return 'Hello, World!'
-
-@app.route('/save-code', methods=['POST'])
-def save_code():
-    print("\n=== Save Code Request ===")
-    print(f"Request data: {request.data}")
-    
-    try:
-        data = request.get_json()
-        print(f"Parsed JSON data: {data}")
-        
-        if not data or 'code' not in data:
-            error_msg = 'Missing code in request body'
-            print(f"Error: {error_msg}")
-            return jsonify({'error': error_msg}), 400
-
-        # Get the absolute path to save the file
-        file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'test.txt')
-        print(f"Saving to file: {file_path}")
-        
-        # Ensure the directory exists
-        os.makedirs(os.path.dirname(file_path), exist_ok=True)
-        
-        # Write the code to the file
-        with open(file_path, 'w', encoding='utf-8') as f:
-            f.write(data['code'])
-            
-        print(f"Successfully wrote {len(data['code'])} characters to {file_path}")
-        return jsonify({'message': 'Code saved successfully', 'path': file_path}), 200
-        
-    except Exception as e:
-        error_msg = f"Error saving code: {str(e)}"
-        print(error_msg)
-        import traceback
-        traceback.print_exc()
-        return jsonify({'error': error_msg}), 500
-
-@app.route('/analyze', methods=['POST'])
-def analyze():
-    try:
-        data = request.get_json()
-        print("Received data:", data)  # Debug log
-        
-        if 'code' not in data or 'question' not in data:
-            error_msg = f"Missing required fields. Got: {list(data.keys())}"
-            print(error_msg)  # Debug log
-            return jsonify({'error': error_msg}), 400
-
-        # Convert the question string to a tuple with title and empty description
-        question_title = data['question']
-        question = (question_title, "")  # Empty string as description
-        print(f"Calling analyze_code_with_gemini with code length: {len(data['code'])}, question: {question}")  # Debug log
-        
-        analysis_result = analyze_code_with_gemini(data['code'], question)
-        return jsonify({'analysis': analysis_result})
-        
-    except Exception as e:
-        import traceback
-        error_trace = traceback.format_exc()
-        print(f"Error in /analyze endpoint: {error_trace}")  # Debug log
-        return jsonify({'error': str(e), 'trace': error_trace}), 500
-
-@app.route("/process_audio", methods=["POST"])
+@app.route('/process_audio', methods=['POST'])
 def process_audio():
     """Process audio input and return a response"""
     print("\n=== New Audio Processing Request ===")
@@ -815,20 +454,67 @@ Respond concisely (1-2 sentences max) in an interview-appropriate way. Be helpfu
             "trace": error_trace
         }), 500
 
+def text_to_speech(text, output_file='output.mp3'):
+    """Convert text to speech using ElevenLabs API"""
+    try:
+        if not text or not ELEVENLABS_API_KEY or not VOICE_ID:
+            print("Missing required parameters for TTS")
+            return None
+            
+        # Prepare the request
+        url = f"https://api.elevenlabs.io/v1/text-to-speech/{VOICE_ID}"
+        
+        headers = {
+            "Accept": "audio/mpeg",
+            "Content-Type": "application/json",
+            "xi-api-key": ELEVENLABS_API_KEY
+        }
+        
+        data = {
+            "text": text,
+            "model_id": "eleven_turbo_v2",
+            "voice_settings": {
+                "stability": 0.5,
+                "similarity_boost": 0.75,
+                "style": 0.5,
+                "use_speaker_boost": True
+            }
+        }
+        
+        # Make the API request
+        response = requests.post(url, json=data, headers=headers)
+        
+        # Check if the request was successful
+        if response.status_code == 200:
+            # Save the audio file
+            with open(output_file, 'wb') as f:
+                f.write(response.content)
+            print(f"TTS audio saved to {output_file}")
+            return output_file
+        else:
+            print(f"Error in TTS API request: {response.status_code} - {response.text}")
+            return None
+            
+    except Exception as e:
+        print(f"Error in text_to_speech: {str(e)}")
+        return None
+
 @app.route('/text-to-speech', methods=['POST'])
 def handle_text_to_speech():
     """Endpoint to handle text-to-speech conversion"""
     audio_path = None
     try:
         data = request.get_json()
-        text = data.get('text', '').strip()
-        
-        if not text:
-            return jsonify({'error': 'No text provided'}), 400
+        if not data or 'text' not in data:
+            return jsonify({
+                'status': 'error',
+                'message': 'No text provided'
+            }), 400
             
-        print(f"Received TTS request for text: {text[:100]}...")
+        text = data['text'].strip()
         
-        # Log the text that will be converted to speech
+        # Log the TTS request
+        print(f"Received TTS request for text: {text[:50]}...")
         log_conversation("TTS Input", text)
         
         # Generate speech using ElevenLabs

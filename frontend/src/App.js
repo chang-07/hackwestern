@@ -4,6 +4,7 @@ import Editor from '@monaco-editor/react';
 import VoiceChat from './components/VoiceChat';
 import SimpleVoiceChat from './components/SimpleVoiceChat';
 import ReactMarkdown from 'react-markdown';
+import EmotionStats from './components/EmotionStats';
 import './App.css';
 
 const questions = [
@@ -716,6 +717,7 @@ function App() {
   const [currentView, setCurrentView] = useState('login');
   const [selectedQuestion, setSelectedQuestion] = useState(null);
   const [analysisData, setAnalysisData] = useState(null);
+  const [emotionData, setEmotionData] = useState([]);
   const navigate = useNavigate();
 
   const handleLogin = () => {
@@ -727,8 +729,9 @@ function App() {
     setCurrentView('interview');
   };
 
-  const handleInterviewFinish = (data) => {
+  const handleInterviewFinish = (data, emotionLogs = []) => {
     setAnalysisData(data);
+    setEmotionData(emotionLogs);
     setCurrentView('interviewReview');
   };
 
@@ -751,7 +754,12 @@ function App() {
           onBack={handleBack}
         />
       )}
-      {currentView === 'interviewReview' && <InterviewReview analysis={analysisData} />}
+      {currentView === 'interviewReview' && (
+        <InterviewReview 
+          analysis={analysisData} 
+          emotionData={emotionData} 
+        />
+      )}
     </div>
   );
 }
@@ -939,7 +947,7 @@ function ProblemDescription({ question }) {
   );
 }
 
-function InterviewReview({ analysis }) {
+function InterviewReview({ analysis, emotionData = [] }) {
   // Check if analysis is in the new format (object with analysis data)
   const isNewFormat = analysis && typeof analysis === 'object' && 'overall_score' in analysis;
   
@@ -954,6 +962,7 @@ function InterviewReview({ analysis }) {
         <Header />
         <div className="interview-review-content">
           <h2>Interview Review</h2>
+          {emotionData.length > 0 && <EmotionStats logData={emotionData} />}
           <div className="analysis-section">
             <h3>Code Analysis</h3>
             <div className="markdown-content">
@@ -973,6 +982,9 @@ function InterviewReview({ analysis }) {
     areas_for_improvement = [],
     detailed_summary = ''
   } = analysis;
+  
+  // Add emotion data to the review if available
+  const hasEmotionData = emotionData && emotionData.length > 0;
   
   // Function to render a score bar
   const renderScoreBar = (score, label) => (
@@ -997,6 +1009,7 @@ function InterviewReview({ analysis }) {
       <Header />
       <div className="interview-review-content">
         <h2>Interview Review</h2>
+        {hasEmotionData && <EmotionStats logData={emotionData} />}
         
         <div className="overall-score">
           <h3>Overall Score: <span className="score">{overall_score.toFixed(1)}/10</span></h3>
@@ -1073,8 +1086,27 @@ function Interview({ question, onInterviewFinish, onBack }) {
   const animationFrameId = useRef(null);
   
   // Handle interview start when user is ready
-  const handleReady = () => {
-    setInterviewStarted(true);
+  const handleReady = async () => {
+    try {
+      // Start health tracking when interview starts
+      const response = await fetch('http://localhost:5008/start_problem', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        console.error('Failed to start health tracking');
+      } else {
+        console.log('Health tracking started');
+      }
+      
+      setInterviewStarted(true);
+    } catch (error) {
+      console.error('Error starting health tracking:', error);
+      setInterviewStarted(true); // Continue with interview even if health tracking fails
+    }
   };
 
   useEffect(() => {
@@ -1102,21 +1134,39 @@ function Interview({ question, onInterviewFinish, onBack }) {
     }
   }, [fontSize]);
 
+  // Set up audio context on mount and clean up on unmount
   useEffect(() => {
-    const getCamera = async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
+    return async () => {
+      // Stop health tracking if component unmounts during interview
+      if (interviewStarted) {
+        try {
+          await fetch('http://localhost:5008/end_problem', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+          console.log('Health tracking stopped on unmount');
+        } catch (error) {
+          console.error('Error stopping health tracking on unmount:', error);
         }
-      } catch (err) {
-        console.error("Error accessing camera: ", err);
+      }
+      
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+      }
+      if (animationFrameId.current) {
+        cancelAnimationFrame(animationFrameId.current);
       }
     };
+  }, [interviewStarted]);
+  
+  // Set up audio context on mount
+  useEffect(() => {
+    initAudioContext();
+  }, [isPlaying, isRecording]); // Re-run when recording/playback state changes
 
-    getCamera();
-  }, []);
-
+  // Handle language selection
   const handleLanguageSelect = (language) => {
     setSelectedLanguage(language);
   };
@@ -1151,22 +1201,6 @@ function Interview({ question, onInterviewFinish, onBack }) {
       console.error('Error initializing audio context:', err);
     }
   };
-  
-  // Set up audio context on mount and clean up on unmount
-  useEffect(() => {
-    initAudioContext();
-    
-    // Cleanup function
-    return () => {
-      if (animationFrameId.current) {
-        cancelAnimationFrame(animationFrameId.current);
-        animationFrameId.current = null;
-      }
-      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
-        audioContextRef.current.close();
-      }
-    };
-  }, [isPlaying, isRecording]); // Re-run when recording/playback state changes
   
   // Function to save editor content to test.txt
   const saveEditorContent = async () => {
@@ -1584,6 +1618,36 @@ function Interview({ question, onInterviewFinish, onBack }) {
       
       // Handle the name response and continue with problem explanation
       handleNameResponse(name);
+    }
+  };
+
+  // Handle interview finish
+  const handleFinish = async () => {
+    try {
+      // Stop health tracking when interview ends
+      const response = await fetch('http://localhost:5008/end_problem', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        console.error('Failed to stop health tracking');
+      } else {
+        console.log('Health tracking stopped');
+      }
+    } catch (error) {
+      console.error('Error stopping health tracking:', error);
+    }
+    
+    if (onInterviewFinish) {
+      onInterviewFinish({
+        question,
+        code,
+        language: selectedLanguage,
+        timestamp: new Date().toISOString()
+      });
     }
   };
 

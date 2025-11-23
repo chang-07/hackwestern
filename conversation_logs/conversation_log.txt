@@ -1,13 +1,4 @@
-[2025-11-22 18:00:37] User: My name is Chen
+[2025-11-22 20:46:35] User: One two three just say something back
 
-[2025-11-22 18:00:38] AI: Okay, Chen, nice to meet you. Let's start with your implementation of the Longest Substring Without Repeating Characters. Currently, there's no code provided. Could you please share your code so we can discuss your approach?
-
-
-[2025-11-22 18:18:11] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
-
-[2025-11-22 18:18:12] TTS Output: Generated audio: response_chunk_0.mp3 (132120 bytes)
-
-[2025-11-22 18:20:58] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
-
-[2025-11-22 18:20:58] TTS Output: Generated audio: response_chunk_0.mp3 (132956 bytes)
+[2025-11-22 20:46:39] AI: Thanks. Please walk me through your initial thoughts or your high-level approach for solving the Two Sum problem.
 

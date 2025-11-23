@@ -1,3 +1,4 @@
+import os
 import cv2
 import numpy as np
 import time
@@ -8,56 +9,36 @@ import threading
 from collections import defaultdict
 
 class HealthTracker:
-    def __init__(self, camera_index: int = 0, update_interval: float = 2.0):
+    def __init__(self, camera_index: int = 0, update_interval: float = 2.0, log_file: str = "emotion_log.txt"):
         """
-        Initialize the health tracker with Mac-optimized settings.
-        Automatically detects and uses MPS (Metal Performance Shaders) on Apple Silicon.
+        Initialize the health tracker with logging to a file.
         
         Args:
-            camera_index: Index of the camera to use (default: 0 for default camera)
+            camera_index: Index of the camera to use (not used in this version)
             update_interval: Time in seconds between emotion updates (default: 2.0)
+            log_file: Path to the log file where emotion stats will be saved
         """
         # Set device for PyTorch (MPS for Apple Silicon, fallback to CPU)
         self.device = torch.device('mps' if torch.backends.mps.is_available() else 'cpu')
         print(f"Using device: {self.device}")
         
+        # Initialize log file
+        self.log_file = log_file
+        self.log_interval = 5.0  # Log to file every 5 seconds
+        self.last_log_time = time.time()
+        
+        # Create headers in the log file if it doesn't exist
+        if not os.path.exists(self.log_file):
+            with open(self.log_file, 'w') as f:
+                f.write("timestamp,angry,disgust,fear,happy,sad,surprise,neutral,dominant_emotion,engagement\n")
+        
         try:
             from deepface import DeepFace
             import numpy as np
-            import os
             
-            # Create test images directory if it doesn't exist
-            test_dir = os.path.join(os.path.dirname(__file__), "test_images")
-            os.makedirs(test_dir, exist_ok=True)
-            
-            # Create test images if they don't exist
-            img1_path = os.path.join(test_dir, "test1.jpg")
-            img2_path = os.path.join(test_dir, "test2.jpg")
-            
-            if not os.path.exists(img1_path):
-                # Create a simple black image
-                cv2.imwrite(img1_path, np.zeros((100, 100, 3), dtype=np.uint8))
-            if not os.path.exists(img2_path):
-                # Create a simple white image
-                cv2.imwrite(img2_path, np.ones((100, 100, 3), dtype=np.uint8) * 255)
-            
-            print("Testing DeepFace with test images...")
-            # Test if DeepFace works with enforce_detection=False
-            try:
-                result = DeepFace.verify(img1_path, img2_path, enforce_detection=False)
-                print("DeepFace verification successful")
-                self.emotion_detection_available = True
-                print("Emotion detection initialized successfully with DeepFace")
-                
-                # Test emotion detection
-                print("Testing emotion detection...")
-                emotions = DeepFace.analyze(img1_path, actions=['emotion'], enforce_detection=False)
-                print(f"Emotion detection test result: {emotions}")
-                
-            except Exception as e:
-                print(f"DeepFace verification failed: {str(e)}")
-                print("Falling back to mock emotion detection")
-                self.emotion_detection_available = False
+            print("Initializing DeepFace...")
+            self.emotion_detection_available = True
+            print("Emotion detection initialized successfully with DeepFace")
                 
         except ImportError as ie:
             print(f"Error importing DeepFace: {ie}")
@@ -71,11 +52,6 @@ class HealthTracker:
             traceback.print_exc()
             print("Falling back to mock emotion detection")
             self.emotion_detection_available = False
-            
-        # Initialize video capture
-        self.cap = cv2.VideoCapture(camera_index)
-        if not self.cap.isOpened():
-            print("Warning: Could not open camera. Health tracking will be limited.")
             
         # Tracking state
         self.last_update = 0
@@ -98,8 +74,8 @@ class HealthTracker:
             'disgust': 0.1
         }
     
-    def _detect_emotions(self, frame):
-        """Detect emotions in a frame using DeepFace"""
+    def _detect_emotions(self):
+        """Detect emotions using DeepFace from the default camera"""
         if not self.emotion_detection_available:
             print("Emotion detection not available, using mock data")
             return {
@@ -113,8 +89,7 @@ class HealthTracker:
             }
             
         try:
-            print("Attempting to save frame for DeepFace analysis...")
-            # Save frame to a temporary file
+            from deepface import DeepFace
             import tempfile
             import os
             
@@ -122,93 +97,47 @@ class HealthTracker:
             temp_dir = "/tmp/emotion_frames"
             os.makedirs(temp_dir, exist_ok=True)
             
-            # Create a unique filename
-            import uuid
-            temp_filename = f"frame_{uuid.uuid4()}.jpg"
-            temp_path = os.path.join(temp_dir, temp_filename)
+            # Capture a single frame from the default camera
+            cap = cv2.VideoCapture(0)
+            if not cap.isOpened():
+                print("Error: Could not open camera")
+                return None
+                
+            ret, frame = cap.read()
+            cap.release()
             
-            print(f"Saving frame to {temp_path}")
-            success = cv2.imwrite(temp_path, frame)
-            if not success:
-                print("Error: Failed to save frame to temporary file")
+            if not ret:
+                print("Error: Could not capture frame from camera")
                 return None
                 
-            print("Frame saved successfully. Starting DeepFace analysis...")
+            # Save frame to a temporary file
+            temp_path = os.path.join(temp_dir, f"frame_{int(time.time())}.jpg")
+            cv2.imwrite(temp_path, frame)
             
-            # Import DeepFace here to get better error messages
+            # Analyze the captured frame
+            result = DeepFace.analyze(
+                img_path=temp_path,
+                actions=['emotion'],
+                enforce_detection=False,
+                detector_backend='opencv',
+                silent=True
+            )
+            
+            # Clean up the temporary file
             try:
-                from deepface import DeepFace
-                print("DeepFace imported successfully")
-            except ImportError as ie:
-                print(f"Error importing DeepFace: {ie}")
-                print("Please install it with: pip install deepface")
-                return None
-                
-            try:
-                # Try a simple DeepFace operation to test
-                print("Testing DeepFace with verify...")
-                try:
-                    # This is just a test - we use dummy files to check if DeepFace works
-                    test_img1 = os.path.join(os.path.dirname(__file__), "test1.jpg")
-                    test_img2 = os.path.join(os.path.dirname(__file__), "test2.jpg")
+                os.remove(temp_path)
+            except:
+                pass
+            
+            if isinstance(result, list) and len(result) > 0:
+                if 'emotion' in result[0]:
+                    return result[0]['emotion']
                     
-                    # Create dummy files if they don't exist
-                    if not os.path.exists(test_img1):
-                        import numpy as np
-                        cv2.imwrite(test_img1, np.zeros((100, 100, 3), dtype=np.uint8))
-                    if not os.path.exists(test_img2):
-                        import numpy as np
-                        cv2.imwrite(test_img2, np.ones((100, 100, 3), dtype=np.uint8))
-                    
-                    print(f"Testing with files: {test_img1} and {test_img2}")
-                    result = DeepFace.verify(test_img1, test_img2, enforce_detection=False)
-                    print("DeepFace verify test successful")
-                except Exception as e:
-                    print(f"DeepFace verify test failed: {e}")
-                    print("This suggests there might be an issue with the DeepFace installation or its dependencies.")
-                    return None
-                
-                print(f"Analyzing frame with DeepFace: {temp_path}")
-                result = DeepFace.analyze(
-                    img_path=temp_path,
-                    actions=['emotion'],
-                    enforce_detection=False,  # Don't fail if no face is detected
-                    detector_backend='opencv',
-                    silent=False  # Show more detailed output
-                )
-                
-                print(f"DeepFace analysis result: {result}")
-                
-                if isinstance(result, list) and len(result) > 0:
-                    # Get the first face detected
-                    face = result[0]
-                    print(f"Face detected with emotions: {face.get('emotion', 'No emotion data')}")
-                    if 'emotion' in face:
-                        return face['emotion']
-                else:
-                    print("No faces detected in the result")
-                    
-            except Exception as e:
-                print(f"Error during DeepFace analysis: {str(e)}")
-                import traceback
-                print("Full traceback:")
-                traceback.print_exc()
-                return None
-            finally:
-                # Clean up the temporary file
-                try:
-                    if os.path.exists(temp_path):
-                        os.remove(temp_path)
-                except Exception as e:
-                    print(f"Error cleaning up temporary file: {e}")
-                    
+            return None
+            
         except Exception as e:
-            print(f"Unexpected error in _detect_emotions: {str(e)}")
-            import traceback
-            print("Full traceback:")
-            traceback.print_exc()
-            
-        return None
+            print(f"Error in emotion detection: {str(e)}")
+            return None
     
     def calculate_engagement(self, emotions: Dict) -> float:
         """Calculate engagement score from emotion probabilities."""
@@ -226,23 +155,50 @@ class HealthTracker:
             
         return min(max(engagement / max(total_weight, 0.001), 0.0), 1.0)
     
+    def _log_emotions(self, emotions, engagement):
+        """Log emotion data to a CSV file"""
+        if not emotions:
+            return
+            
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        dominant_emotion = max(emotions.items(), key=lambda x: x[1])[0] if emotions else 'unknown'
+        
+        # Format the data as a CSV line
+        data_line = (
+            f"{timestamp},"
+            f"{emotions.get('angry', 0):.4f},"
+            f"{emotions.get('disgust', 0):.6f},"
+            f"{emotions.get('fear', 0):.4f},"
+            f"{emotions.get('happy', 0):.4f},"
+            f"{emotions.get('sad', 0):.4f},"
+            f"{emotions.get('surprise', 0):.6f},"
+            f"{emotions.get('neutral', 0):.4f},"
+            f"{dominant_emotion},"
+            f"{engagement:.4f}\n"
+        )
+        
+        # Append to the log file
+        with open(self.log_file, 'a') as f:
+            f.write(data_line)
+        
+        print(f"Logged emotions at {timestamp}")
+        print(f"Dominant emotion: {dominant_emotion} (Engagement: {engagement:.2f})")
+    
     def update(self) -> Optional[Dict]:
-        """Capture a frame and update tracking metrics."""
+        """Update tracking metrics and log to file."""
         current_time = time.time()
+        
+        # Check if it's time to update
         if current_time - self.last_update < self.update_interval:
             return None
             
-        ret, frame = self.cap.read()
-        if not ret:
-            print("Failed to capture frame")
-            return None
-            
         # Detect emotions
-        emotions = self._detect_emotions(frame)
+        emotions = self._detect_emotions()
         if not emotions:
+            print("No emotions detected, skipping update")
             return None
             
-        # Calculate metrics
+        # Calculate engagement
         engagement = self.calculate_engagement(emotions)
         timestamp = datetime.now()
         
@@ -267,9 +223,14 @@ class HealthTracker:
             'timestamp': timestamp.isoformat(),
             'emotions': emotions,
             'engagement': engagement,
-            'average_engagement': np.mean(self.engagement_scores) if self.engagement_scores else 0,
+            'average_engagement': float(np.mean(self.engagement_scores)) if self.engagement_scores else 0.0,
             'dominant_emotion': max(emotions.items(), key=lambda x: x[1])[0] if emotions else 'unknown'
         }
+        
+        # Log to file at regular intervals
+        if current_time - self.last_log_time >= self.log_interval:
+            self._log_emotions(emotions, engagement)
+            self.last_log_time = current_time
         
         return self.latest_data
     
@@ -340,58 +301,46 @@ class HealthTracker:
     
     def get_annotated_frame(self):
         """
-        Get the current camera frame with emotion detection overlay.
+        Get a black frame with emotion detection results.
         
         Returns:
             tuple: (success, frame) where success is a boolean and frame is the annotated image
         """
-        if not hasattr(self, 'cap') or self.cap is None:
-            print("Error: Video capture not initialized")
-            return False, None
-            
-        if not self.cap.isOpened():
-            print("Error: Camera not opened")
-            return False, None
-            
-        ret, frame = self.cap.read()
-        if not ret:
-            print("Error: Failed to read frame from camera")
-            return False, None
-            
-        print(f"Successfully read frame: {frame.shape if frame is not None else 'None'}")
-            
+        # Create a black frame
+        frame = np.zeros((480, 640, 3), dtype=np.uint8)
+        
         # Get the latest emotion data
-        emotions = self._detect_emotions(frame)
+        emotions = self.latest_data.get('emotions', {})
         
         if not emotions:
-            print("No emotions detected, using mock data")
+            text = "No emotion data available"
+            cv2.putText(frame, text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
             return True, frame
-        
+            
         # Draw emotion information on the frame
-        height, width = frame.shape[:2]
+        dominant_emotion = max(emotions.items(), key=lambda x: x[1])[0] if emotions else 'unknown'
+        text = f"Dominant: {dominant_emotion}"
+        cv2.putText(frame, text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
         
-        # Draw a semi-transparent background for the text
-        overlay = frame.copy()
-        cv2.rectangle(overlay, (10, 10), (300, 100 + (len(emotions) * 30)), (0, 0, 0), -1)
-        cv2.addWeighted(overlay, 0.7, frame, 0.3, 0, frame)
-        
-        # Draw emotion probabilities
-        y = 40
-        cv2.putText(frame, "Emotion Detection:", (20, y), 
-                   cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
-        
+        # Draw emotion probabilities (sorted by value, highest first)
+        y_offset = 70
         for emotion, prob in sorted(emotions.items(), key=lambda x: -x[1]):
-            y += 30
             text = f"{emotion}: {prob:.2f}"
-            cv2.putText(frame, text, (20, y), 
+            cv2.putText(frame, text, (20, y_offset), 
                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 1)
+            y_offset += 30
         
-        # Draw engagement score
-        engagement = self.calculate_engagement(emotions)
+        # Add engagement score
+        engagement = self.latest_data.get('engagement', 0)
         engagement_text = f"Engagement: {engagement:.2f}"
-        cv2.putText(frame, engagement_text, (20, y + 40),
-                   cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+        cv2.putText(frame, engagement_text, (20, y_offset + 20), 
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
         
+        # Add timestamp
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        cv2.putText(frame, timestamp, (10, 470), 
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
+            
         return True, frame
     
     def get_latest_data(self) -> Dict:
@@ -401,85 +350,50 @@ class HealthTracker:
     def release(self):
         """Release resources."""
         self.stop()
-        if self.cap.isOpened():
+        if hasattr(self, 'cap') and self.cap is not None and hasattr(self.cap, 'isOpened') and self.cap.isOpened():
             self.cap.release()
         cv2.destroyAllWindows()
 
-# Flask application
-from flask import Flask, Response, jsonify, request
-import json
+# Simple logging to file
+import os
 
-app = Flask(__name__)
-tracker = None
-
-@app.route('/')
-def index():
-    return "Emotion Detection Server is running!"
-
-@app.route('/api/health/status')
-def status():
+def print_status(tracker):
+    """Print current status to console"""
     if tracker:
         data = tracker.get_latest_data()
-        return jsonify({
-            'status': 'success',
-            'data': data
-        })
-    return jsonify({'status': 'error', 'message': 'Tracker not initialized'})
+        print("\n=== Current Status ===")
+        print(f"Log file: {os.path.abspath(tracker.log_file)}")
+        print(f"Update interval: {tracker.update_interval} seconds")
+        print(f"Last update: {data.get('timestamp', 'Never')}")
+        if 'emotions' in data:
+            print("\nCurrent Emotions:")
+            for emotion, prob in sorted(data['emotions'].items(), key=lambda x: -x[1]):
+                print(f"  {emotion}: {prob:.2f}")
+            print(f"\nEngagement: {data.get('engagement', 0):.2f}")
+        print("====================\n")
 
-@app.route('/api/health/video_feed')
-def video_feed():
-    def generate():
-        while True:
-            if tracker:
-                success, frame = tracker.get_annotated_frame()
-                if success:
-                    ret, jpeg = cv2.imencode('.jpg', frame)
-                    if ret:
-                        yield (b'--frame\r\n'
-                               b'Content-Type: image/jpeg\r\n\r\n' + jpeg.tobytes() + b'\r\n')
-            time.sleep(0.1)
-    
-    return Response(generate(),
-                    mimetype='multipart/x-mixed-replace; boundary=frame')
-
-# Example usage
 if __name__ == "__main__":
-    # Test PyTorch device detection
-    print("Testing PyTorch installation...")
-    print(f"PyTorch version: {torch.__version__}")
-    print(f"MPS (Metal Performance Shaders) available: {torch.backends.mps.is_available()}")
+    print("Starting Emotion Detection Logger...")
+    print("Press Ctrl+C to stop\n")
     
-    print("\nStarting Health Tracker with Mac optimizations...")
-    tracker = HealthTracker()
+    # Initialize the tracker
+    tracker = HealthTracker(update_interval=2.0)  # Update every 2 seconds
     tracker.start()
     
     try:
-        # Start Flask server
-        port = 5012  # Changed to 5012 to avoid port conflicts
-        print(f"Starting Flask server on http://localhost:{port}")
-        print(f"Video feed available at: http://localhost:{port}/api/health/video_feed")
-        print(f"Status available at: http://localhost:{port}/api/health/status")
-        app.run(host='0.0.0.0', port=port, debug=True, use_reloader=False)
-        print("Starting tracking (press 'q' to quit)...")
-        tracker.start()
+        # Print initial status
+        print_status(tracker)
         
+        # Main loop
         while True:
-            # Get and display the latest data
-            data = tracker.get_latest_data()
-            if data:
-                print(f"\rEngagement: {data.get('engagement', 0):.2f} | "
-                      f"Dominant: {data.get('dominant_emotion', 'N/A')} | "
-                      f"FPS: {1/(time.time() - tracker.last_update):.1f}" if tracker.last_update else "", 
-                      end='')
+            time.sleep(5)  # Print status every 5 seconds
+            print_status(tracker)
             
-            # Check for 'q' key to quit
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
-                
     except KeyboardInterrupt:
-        print("\nStopping...")
+        print("\nStopping emotion detection...")
     finally:
+        # Clean up
         tracker.stop()
-        print("\nSession Summary:")
-        print(json.dumps(tracker.get_summary(), indent=2))
         tracker.release()
+        print(f"\nEmotion data has been logged to: {os.path.abspath(tracker.log_file)}")
+        print("Done.")
