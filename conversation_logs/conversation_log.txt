@@ -2,3 +2,11 @@
 
 [2025-11-22 20:46:39] AI: Thanks. Please walk me through your initial thoughts or your high-level approach for solving the Two Sum problem.
 
+[2025-11-22 20:49:34] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 20:49:35] TTS Output: Generated audio: output.mp3 (135881 bytes)
+
+[2025-11-22 20:50:19] TTS Input: Hi there! I'm Potts, a senior software engineer at Scotiabank. I'll be conducting your technical interview today. Could you please tell me your name?
+
+[2025-11-22 20:50:20] TTS Output: Generated audio: output.mp3 (132956 bytes)
+

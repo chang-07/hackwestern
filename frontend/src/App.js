@@ -1134,8 +1134,45 @@ function Interview({ question, onInterviewFinish, onBack }) {
     }
   }, [fontSize]);
 
-  // Set up audio context on mount and clean up on unmount
+  // Set up camera and audio context on mount and clean up on unmount
   useEffect(() => {
+    // Initialize camera
+    const startCamera = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          video: { 
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+            facingMode: 'user' 
+          } 
+        });
+        
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          await videoRef.current.play();
+        }
+        
+        // Store the stream for cleanup
+        const currentStream = stream;
+        
+        // Cleanup function
+        return () => {
+          if (currentStream) {
+            currentStream.getTracks().forEach(track => track.stop());
+          }
+          if (videoRef.current) {
+            videoRef.current.srcObject = null;
+          }
+        };
+      } catch (err) {
+        console.error('Error accessing camera:', err);
+      }
+    };
+    
+    // Start camera
+    const cleanupCamera = startCamera();
+    
+    // Return cleanup function
     return async () => {
       // Stop health tracking if component unmounts during interview
       if (interviewStarted) {
@@ -1152,6 +1189,12 @@ function Interview({ question, onInterviewFinish, onBack }) {
         }
       }
       
+      // Clean up camera
+      if (cleanupCamera) {
+        cleanupCamera.then(cleanup => cleanup && cleanup());
+      }
+      
+      // Clean up audio context
       if (audioContextRef.current) {
         audioContextRef.current.close();
       }
@@ -1847,7 +1890,21 @@ function Interview({ question, onInterviewFinish, onBack }) {
           </div>
         </div>
         <div className="sidebar">
-          <video ref={videoRef} className="camera-view" autoPlay playsInline></video>
+          <div className="camera-container" style={{ position: 'relative', width: '100%', height: '240px', overflow: 'hidden', borderRadius: '8px', backgroundColor: '#1e1e1e' }}>
+            <video 
+              ref={videoRef} 
+              className="camera-view" 
+              autoPlay 
+              playsInline 
+              muted
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                transform: 'scaleX(-1)' // Mirror the video for a more natural feel
+              }}
+            />
+          </div>
           <LanguageSelector selectedLanguage={selectedLanguage} onLanguageSelect={handleLanguageSelect} />
           <ProblemDescription question={question} />
         </div>
