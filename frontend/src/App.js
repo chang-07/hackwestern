@@ -720,6 +720,10 @@ function App() {
   const [emotionData, setEmotionData] = useState([]);
   const navigate = useNavigate();
 
+  const handleBackToProblems = () => {
+    setCurrentView('questionSelector');
+  };
+
   const handleLogin = () => {
     setCurrentView('questionSelector');
   };
@@ -757,7 +761,8 @@ function App() {
       {currentView === 'interviewReview' && (
         <InterviewReview 
           analysis={analysisData} 
-          emotionData={emotionData} 
+          emotionData={emotionData}
+          onBack={handleBackToProblems}
         />
       )}
     </div>
@@ -947,7 +952,7 @@ function ProblemDescription({ question }) {
   );
 }
 
-function InterviewReview({ analysis, emotionData = [] }) {
+function InterviewReview({ analysis, emotionData = [], onBack }) {
   // Check if analysis is in the new format (object with analysis data)
   const isNewFormat = analysis && typeof analysis === 'object' && 'overall_score' in analysis;
   
@@ -1008,6 +1013,12 @@ function InterviewReview({ analysis, emotionData = [] }) {
     <div className="interview-review-container">
       <Header />
       <div className="interview-review-content">
+        <button 
+          onClick={onBack}
+          className="back-to-problems-btn"
+        >
+          ← Back to Problems
+        </button>
         <h2>Interview Review</h2>
         {hasEmotionData && <EmotionStats logData={emotionData} />}
         

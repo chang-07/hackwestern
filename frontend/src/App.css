@@ -767,6 +767,26 @@ body {
   border-radius: 8px;
   padding: 30px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  position: relative;
+}
+
+.back-to-problems-btn {
+  background-color: #5f6368;
+  color: #e8eaed;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px;
+  font-size: 14px;
+  cursor: pointer;
+  margin-bottom: 20px;
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.back-to-problems-btn:hover {
+  background-color: #80868b;
 }
 
 .interview-review-content h2 {
