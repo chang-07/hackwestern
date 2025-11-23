@@ -303,6 +303,14 @@ def speech_to_text(audio_path):
             print(f"Audio file not found: {audio_path}")
             return None
             
+        # Verify file is not empty
+        file_size = os.path.getsize(audio_path)
+        if file_size == 0:
+            print(f"Error: Audio file is empty: {audio_path}")
+            return None
+            
+        print(f"Reading audio file: {audio_path} (size: {file_size} bytes)")
+            
         # Read the audio file
         with open(audio_path, 'rb') as f:
             audio_data = f.read()
@@ -324,17 +332,35 @@ def speech_to_text(audio_path):
             "xi-api-key": ELEVENLABS_API_KEY
         }
         
-        response = requests.post(url, headers=headers, files=files)
+        print(f"Sending request to ElevenLabs API...")
+        response = requests.post(url, headers=headers, files=files, timeout=30)
+        
+        print(f"API Response Status: {response.status_code}")
         
         if response.status_code == 200:
             result = response.json()
-            return result.get('text', '').strip()
+            text = result.get('text', '').strip()
+            print(f"Successfully transcribed text: {text}")
+            return text
         else:
-            print(f"Error in speech-to-text API: {response.status_code} - {response.text}")
+            error_msg = f"Error in speech-to-text API: {response.status_code} - {response.text}"
+            print(error_msg)
             return None
             
+    except requests.exceptions.RequestException as e:
+        error_msg = f"Request error in speech_to_text: {str(e)}"
+        print(error_msg)
+        return None
+    except json.JSONDecodeError as e:
+        error_msg = f"Failed to parse API response: {str(e)}"
+        print(error_msg)
+        return None
     except Exception as e:
-        print(f"Error in speech_to_text: {str(e)}")
+        error_msg = f"Unexpected error in speech_to_text: {str(e)}"
+        print(error_msg)
+        import traceback
+        traceback.print_exc()
+        return None
         return None
 
 @app.route('/save-code', methods=['POST'])
@@ -402,24 +428,54 @@ def process_audio():
             if not audio_path.lower().endswith('.wav'):
                 import subprocess
                 wav_path = os.path.splitext(audio_path)[0] + '.wav'
+                print(f"10.1. Converting {audio_path} to WAV format: {wav_path}")
+                
                 try:
+                    # Verify input file exists and has content
+                    if not os.path.exists(audio_path) or os.path.getsize(audio_path) == 0:
+                        error_msg = f"Input audio file is missing or empty: {audio_path}"
+                        print(error_msg)
+                        return jsonify({"error": error_msg}), 400
+                    
                     # Use ffmpeg to convert the audio to WAV format (16kHz, 16-bit, mono)
-                    subprocess.run([
+                    result = subprocess.run([
                         'ffmpeg', '-y',
                         '-i', audio_path,
                         '-ar', '16000',
                         '-ac', '1',
                         '-c:a', 'pcm_s16le',
                         wav_path
-                    ], check=True, capture_output=True)
-                    print(f"10.1. Converted audio to WAV format: {wav_path}")
+                    ], check=True, capture_output=True, text=True)
+                    
+                    # Verify the output file was created and has content
+                    if not os.path.exists(wav_path) or os.path.getsize(wav_path) == 0:
+                        error_msg = f"Failed to convert audio file. FFmpeg output: {result.stderr}"
+                        print(error_msg)
+                        return jsonify({"error": "Failed to convert audio format"}), 400
+                        
+                    print(f"10.2. Successfully converted to WAV: {wav_path} (size: {os.path.getsize(wav_path)} bytes)")
+                    
+                    # Process the converted file
                     text = speech_to_text(wav_path)
+                    
                     # Clean up the converted file
-                    if os.path.exists(wav_path):
-                        os.remove(wav_path)
-                except Exception as e:
-                    print(f"Error converting audio to WAV: {str(e)}")
+                    try:
+                        if os.path.exists(wav_path):
+                            os.remove(wav_path)
+                            print(f"10.3. Cleaned up temporary WAV file")
+                    except Exception as cleanup_error:
+                        print(f"Warning: Failed to clean up temporary WAV file: {str(cleanup_error)}")
+                        
+                except subprocess.CalledProcessError as e:
+                    error_msg = f"Error converting audio to WAV: {str(e)}\nFFmpeg stderr: {e.stderr}"
+                    print(error_msg)
                     return jsonify({"error": "Failed to process audio format"}), 400
+                except Exception as e:
+                    error_msg = f"Unexpected error during audio conversion: {str(e)}"
+                    print(error_msg)
+                    import traceback
+                    traceback.print_exc()
+                    return jsonify({"error": "Failed to process audio"}), 500
             else:
                 text = speech_to_text(audio_path)
             

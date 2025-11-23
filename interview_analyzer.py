@@ -129,6 +129,10 @@ class InterviewAnalyzer:
         self.analyze_conversation()
         self.analyze_code_quality()
         
+        # Set fixed scores for charisma and problem_solving
+        self.metrics['charisma'] = 5.0
+        self.metrics['problem_solving'] = 5.0
+        
         # Calculate overall score
         overall_score = sum(self.metrics[metric] * self.weights[metric] 
                           for metric in self.metrics)
